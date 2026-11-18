@@ -57,6 +57,11 @@ def normalize_player_names(con: duckdb.DuckDBPyConnection) -> int:
     """« Lloris » (écrit `[[Hugo Lloris|Lloris]]` sur la page de l'équipe) devient « Hugo Lloris » : le nom d'un joueur lié est le titre de sa page
     quand le nom lu n'en est qu'une partie. Rend le nombre de noms modifiés."""
     changed = 0
+    for pid, name in con.execute("SELECT id, name FROM player WHERE name LIKE '%, %'").fetchall():        # clé de tri cachée collée au nom (pages fr rendues en HTML)
+        m = re.fullmatch(r"(.+?), (.+?)\2 \1", name)
+        if m:
+            con.execute("UPDATE player SET name = ? WHERE id = ?", [f"{m.group(2)} {m.group(1)}", pid])
+            changed += 1
     for pid, name, title in con.execute("SELECT id, name, link_title FROM player WHERE link_title IS NOT NULL").fetchall():
         full = full_name(name, title)
         if full != name:
@@ -130,14 +135,23 @@ def _norm(text: str) -> str:
 
 
 def _club_key(text: str) -> frozenset[str]:
-    return frozenset(w for w in _norm(text).split() if w not in _CLUB_STOP)
+    return frozenset(w for w in _norm(text.replace(".", "")).split() if w not in _CLUB_STOP)    # « A.S. Roma » = « AS Roma »
 
 
-def _supported(spells: list[tuple], club_title: str, season_year: int) -> bool:
-    """Vrai si la carrière (infobox) contient ce club pendant cette saison (années calendaires Y ou Y+1)."""
+def _club_qids_by_link(con: duckdb.DuckDBPyConnection) -> dict[str, str]:
+    """Titre de page d'un club (redirections des carrières comprises : « AS Nancy Lorraine ») -> QID Wikidata."""
+    out = dict(con.execute("SELECT link_title, qid FROM club_link_qid WHERE qid IS NOT NULL").fetchall())
+    out.update(con.execute("SELECT wikipedia_title, wikidata_qid FROM club WHERE wikipedia_title IS NOT NULL AND wikidata_qid IS NOT NULL").fetchall())
+    return out
+
+
+def _supported(spells: list[tuple], club_title: str, season_year: int, club_qid: str | None = None, link_qid: dict[str, str] | None = None) -> bool:
+    """Vrai si la carrière (infobox) contient ce club pendant cette saison (années calendaires Y ou Y+1).
+    Le club se reconnaît d'abord par son QID Wikidata (`club_qid` de l'effectif, `link_qid` : titre de la carrière -> QID), sinon par son nom."""
     key = _club_key(club_title)
     for link, name, start, end in spells:
-        if not key or key not in (_club_key(link or ""), _club_key(name or "")):
+        same = bool(club_qid and link and link_qid and link_qid.get(link) == club_qid) or bool(key and key in (_club_key(link or ""), _club_key(name or "")))
+        if not same:
             continue
         if start is None or (start <= season_year + 1 and (end is None or end >= season_year)):
             return True
@@ -157,6 +171,7 @@ def reconcile_by_name(con: duckdb.DuckDBPyConnection) -> ReconcileReport:
             "SELECT player_id, club_link, club_name, start_year, end_year FROM player_career").fetchall():
         careers[pid].append((link, name, start, end))
 
+    link_qid = _club_qids_by_link(con)
     loose = con.execute("SELECT p.id, p.name FROM player p LEFT JOIN player_wikidata w ON w.player_id = p.id "
                         "WHERE p.link_title IS NULL AND w.player_id IS NULL").fetchall()
     for pid, name in loose:
@@ -164,10 +179,10 @@ def reconcile_by_name(con: duckdb.DuckDBPyConnection) -> ReconcileReport:
         if not cands:
             report.unresolved += 1
             continue
-        stays = con.execute("""SELECT cl.wikipedia_title, s.start_year FROM player_club_season pcs
+        stays = con.execute("""SELECT cl.wikipedia_title, s.start_year, cl.wikidata_qid FROM player_club_season pcs
             JOIN club_season cs ON cs.id = pcs.club_season_id JOIN club cl ON cl.id = cs.club_id
             JOIN season s ON s.id = cs.season_id WHERE pcs.player_id = ?""", [pid]).fetchall()
-        proven = [c for c in cands if stays and all(_supported(careers[c], t, y) for t, y in stays)]
+        proven = [c for c in cands if stays and all(_supported(careers[c], t, y, q, link_qid) for t, y, q in stays)]
         if len(proven) != 1:
             report.unresolved += 1
             continue
@@ -335,11 +350,12 @@ def reconcile_by_infobox(con: duckdb.DuckDBPyConnection, pages, search, qids, *,
         "SELECT p.id, p.name FROM player p LEFT JOIN player_wikidata w ON w.player_id = p.id "
         "WHERE w.player_id IS NULL AND (p.link_title IS NULL) ORDER BY p.id").fetchall()
         if not re.search(r"[{}\[\]|<>#]", name)]                  # un nom qui contient du code wiki n'est pas un titre de page
+    link_qid = _club_qids_by_link(con)
     stays: dict[int, list[tuple]] = defaultdict(list)
-    for pid, club, year in con.execute("""SELECT pcs.player_id, cl.wikipedia_title, s.start_year FROM player_club_season pcs
+    for pid, club, year, club_qid in con.execute("""SELECT pcs.player_id, cl.wikipedia_title, s.start_year, cl.wikidata_qid FROM player_club_season pcs
             JOIN club_season cs ON cs.id = pcs.club_season_id JOIN club cl ON cl.id = cs.club_id
             JOIN season s ON s.id = cs.season_id""").fetchall():
-        stays[pid].append((club, year))
+        stays[pid].append((club, year, club_qid))
 
     def proven(pid: int, name: str, titles: list[str]) -> list[str]:
         titles = [t for t in dict.fromkeys(titles) if _name_matches(name, t)]
@@ -348,7 +364,7 @@ def reconcile_by_infobox(con: duckdb.DuckDBPyConnection, pages, search, qids, *,
             if not page.exists:
                 continue
             spells = [(s.club_link, s.club_name, s.start_year, s.end_year) for s in parse_career(page.wikitext or "")]
-            if spells and stays[pid] and all(_supported(spells, c, y) for c, y in stays[pid]):
+            if spells and stays[pid] and all(_supported(spells, c, y, q, link_qid) for c, y, q in stays[pid]):
                 out.append(page.resolved_title or page.title)
         return list(dict.fromkeys(out))
 

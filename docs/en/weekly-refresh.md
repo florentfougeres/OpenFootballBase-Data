@@ -4,7 +4,7 @@
 
 `scripts/weekly_refresh.sh` keeps the players who are **still active** up to date (in a current squad, or with an open career line):
 
-1. **rebuilds the working database from the latest published release** on every run (`restore-db`), so each run starts from exactly what the site shows; the previous database is moved to `data/work/backups/` (3 kept);
+1. **rebuilds the working database from the latest published release** on every run (`restore-db`), so each run starts from exactly what the site shows; the previous database is moved to `data/work/backups/` (3 kept; **since Data 1.22.0 the rebuild is complete**: the release carries the movements, loans, labels, aliases and corrections in its `work` key, see [restoring-a-database.md](restoring-a-database.md));
 2. `careers --active --fresh`: re-reads the career infobox and profile, ignoring the cache;
 3. `reconcile --names --wikidata`, then `stats --active --fresh`: re-reads the "Career statistics" tables;
 4. `enrich --what players careerclubs labels`, `coaches` (a Wikidata failure is tolerated: the previous table is kept), `matches --fresh-seasons 2` (OpenFootball results and goalscorers, then current-season scores completed from Wikipedia for the 9 first divisions; a network failure is tolerated), `enrich --what leaguelogos` (logos and Wikipedia pages of the competitions, including those of `matches`), `players-data` (OpenFootball height and birthplace), `progress`, `audit` (a blocking problem stops the script before the export);

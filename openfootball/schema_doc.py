@@ -477,6 +477,18 @@ LABELS_FR = {"tables": "Tables", "files": "Fichiers", "rows": "lignes", "key": "
              "desc": "Description", "undoc": "**(non documentée)**", "perseason": "fichiers (un par saison), ex."}
 
 
+WORK_FR = ("Tables de travail (`work`)",
+           "Fichiers `work_*/` du manifeste (clé `work`) : ce que la base de travail garde en plus du Parquet lu par le site. Ils servent à reconstruire une base COMPLÈTE "
+           "(`openfootball restore-db`) et ne sont pas lus par le site. Ils portent des clés naturelles (titre du club, saison, QID du joueur ou son nom), jamais de numéro interne.",
+           {"squad_movement": "mouvements de joueurs : date, fenêtre de transferts, club d'origine ou de destination, prêt ou transfert",
+            "loan_out": "joueurs prêtés ailleurs (absents de l'effectif de leur club d'origine, donc de `squad`)",
+            "entity_label": "libellés anglais et français des entités Wikidata (villes, stades, championnats, clubs)",
+            "player_alias": "rustines de noms de joueurs vers leur page Wikipedia",
+            "amendment_log": "journal des corrections apportées à des saisons ou à des clubs-saisons",
+            "competition_wikidata": "identifiant Wikidata des compétitions",
+            "club_work": "identifiants Wikidata des clubs (pays, ville, stade, championnat) dont les libellés sont dans `entity_label`"})
+
+
 def build_schema_doc(data_dir: str | Path, manifest: dict, lang: str = "fr") -> str:
     """Markdown du dictionnaire (`lang` : `fr` ou `en`) : types et volumes lus dans les fichiers exportés, descriptions tirées de TABLES."""
     from openfootball.schema_doc_en import INTRO_EN, LABELS_EN, TABLES_EN
@@ -501,5 +513,14 @@ def build_schema_doc(data_dir: str | Path, manifest: dict, lang: str = "fr") -> 
         out.append(f"| {lab['col']} | {lab['type']} | {lab['desc']} |\n|---|---|---|")
         for col, typ in _describe(root / example):
             out.append(f"| `{col}` | {typ} | {cols.get(col, lab['undoc'])} |")
+        out.append("")
+    if manifest.get("work"):
+        from openfootball.schema_doc_en import WORK_EN
+        title, text, parts = WORK_EN if lang == "en" else WORK_FR
+        out.append(f"\n## {title}\n\n{text}\n")
+        out.append(f"| {lab['files']} | {lab['rows']} | {lab['desc']} |\n|---|---|---|")
+        for name, entry in manifest["work"].items():
+            nb = f"{entry['rows']:,}".replace(",", "\u202f")
+            out.append(f"| `{entry['path']}` | {nb} | {parts.get(name, '')} |")
         out.append("")
     return "\n".join(out) + "\n"

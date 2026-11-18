@@ -5,10 +5,11 @@ La base obtenue a le schéma courant (migrations) et permet de relancer `backfil
 
 Ce que la release ne contient PAS (donc non restauré) :
   - les identifiants internes (régénérés ; seuls comptent les QID et les titres de pages) ;
-  - les joueurs prêtés ailleurs (`loan_out`, non exportés), le détail des mouvements (`squad_movement` : relancez `transfers`) ;
-  - `player_alias` (rustines `fix-player`), `amendment_log`, `entity_label` (les noms exportés sont repris dans `club`),
-    `club.*_qid` des villes, stades et championnats, `image_file` des photos hors adresse Wikipedia ;
+  - `image_file` des photos hors adresse Wikipedia ;
   - les caches Wikipedia / Wikidata (`cache/`) : sans eux, les commandes relisent le réseau.
+Depuis la clé `work` du manifeste (voir `worksnap.py`), les releases portent aussi les joueurs prêtés ailleurs (`loan_out`), le détail des
+mouvements (`squad_movement`), `player_alias`, `amendment_log`, `entity_label` et les `club.*_qid` : la base restaurée est complète.
+Une release d'avant cette clé donne une base sans ces données : `openfootball recover-work` les reprend depuis une ancienne base de travail.
 """
 from __future__ import annotations
 
@@ -267,6 +268,9 @@ def restore_database(data_dir: str | Path, db_path: str | Path, *, log: Callable
         con.close()
         db_path.unlink(missing_ok=True)
         raise
+    if manifest.get("work"):                           # releases récentes : mouvements, joueurs prêtés, libellés, alias, corrections
+        from openfootball.worksnap import apply_work
+        apply_work(con, data, manifest["work"], log=log)
     counts = {t: con.execute(f"SELECT count(*) FROM {t}").fetchone()[0]
               for t in ("club", "club_season", "player", "player_club_season", "player_career", "player_national", "player_profile")}
     con.close()

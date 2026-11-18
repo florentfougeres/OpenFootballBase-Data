@@ -49,8 +49,8 @@ class _Collector(HTMLParser):
         elif tag in ("td", "th") and self._stack and self._stack[-1]:
             self._cell = _Cell(tag == "th")
             self._stack[-1][-1].append(self._cell)
-        elif tag == "sup" or (tag == "span" and "mw-editsection" in (a.get("class") or "")):
-            self._skip_depth += 1
+        elif tag == "sup" or (tag == "span" and ("mw-editsection" in (a.get("class") or "") or "display:none" in re.sub(r"\s", "", a.get("style") or ""))):
+            self._skip_depth += 1                              # note, lien « modifier », clé de tri cachée (« Akpa, Clément » collée au nom visible)
         elif tag == "span" and self._cell is not None and a.get("title"):
             self._cell.titles.append(a["title"])               # info-bulle : « Prêté à », « Joueur en prêt entrant »
         elif tag == "a" and self._cell is not None:

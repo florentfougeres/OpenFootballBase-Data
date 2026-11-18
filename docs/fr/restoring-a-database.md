@@ -32,14 +32,17 @@ d'effectif, participations aux coupes (`competition_entry`), trous connus, **jou
 effectifs (numéro, poste, statut `arrived_mid`/`left_mid`/`loan_in`, section source, langues qui listent le joueur),
 carrières, sélections, dates de naissance, profils (lieu de naissance, taille, photo), pages Wikipedia par langue.
 
+Via la clé `work` du manifeste (les fichiers `work_*/`, non lus par le site), la release porte aussi ce que la base de travail garde en plus des Parquet du site :
+joueurs **prêtés ailleurs** (`loan_out`), **détail des mouvements** (`squad_movement` : date, fenêtre, club d'origine), libellés Wikidata (`entity_label`) et QID des villes,
+stades et championnats, rustines `player_alias`, journal des corrections (`amendment_log`) et QID des compétitions. Une base restaurée depuis une release **à partir de la Data 1.22.0**
+est donc aussi complète que l'originale.
+
 ## Ce qui ne l'est pas
 
 | Absent de la release | Conséquence | Que faire |
 |---|---|---|
 | Identifiants internes (`id`) | régénérés, différents de ceux de la base d'origine | rien : seuls comptent les QID et les titres de pages |
-| Joueurs **prêtés ailleurs** (`loan_out`), détail des mouvements (`squad_movement`) | non reconstitués | `openfootball transfers` (lit les pages, rapide avec le cache) |
-| Rustines `player_alias` (`fix-player`) | perdues | les refaire ([adding-clubs-and-seasons.md](adding-clubs-and-seasons.md) §6) |
-| Libellés Wikidata (`entity_label`), QID des villes, stades et championnats | les noms exportés sont repris tels quels dans `club` | `openfootball enrich --what labels` les relit |
+| Prêts, mouvements, libellés, alias, corrections **d'une release antérieure à la Data 1.22.0** (sans clé `work`) | non restaurés : les colonnes du site `stint_date`, `stint_window`, `stint_other_club` seraient vides | `openfootball recover-work --from <une ancienne base de travail>`, ou `openfootball transfers` pour les mouvements |
 | Caches Wikipedia / Wikidata (`cache/`) | les commandes relisent le réseau (long, limité à ≈ 1 requête / s) | restaurer aussi `cache/` si vous l'avez sauvegardé |
 | Logos et photos non publiés | idem | `enrich` |
 
@@ -53,7 +56,7 @@ Selon ce que vous voulez faire :
 
 ```bash
 openfootball status --season 2026                 # contrôle : saisons, clubs, joueurs
-openfootball transfers                            # recrée squad_movement (mouvements en cours de saison)
+openfootball transfers                            # seulement pour une release antérieure à la Data 1.22.0 (sans clé `work`) : recrée squad_movement
 openfootball reconcile --names                    # si vous avez relu des effectifs
 openfootball export --out web/public/data         # doit redonner des fichiers équivalents à la release
 ```
@@ -65,7 +68,7 @@ la base restaurée a le même schéma que la base d'origine (migrations appliqu�
 ## Pour aller plus vite : joindre la vraie base à la release (facultatif)
 
 `gh release upload data-1.10.0 data/work/openfootball.duckdb` ajoute la base complète en asset (≈ 200 Mo). Elle contient tout ce
-que `restore-db` ne peut pas retrouver (identifiants, `player_alias`, mouvements, libellés). Pour s'en servir : téléchargez-la
+que `restore-db` ne peut pas retrouver (identifiants, `image_file` des photos hors Wikipedia). Pour s'en servir : téléchargez-la
 et copiez-la à `data/work/openfootball.duckdb` (il faut alors la **version du code** correspondante : les migrations s'appliquent
 au démarrage).
 

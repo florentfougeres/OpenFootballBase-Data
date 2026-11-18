@@ -470,11 +470,6 @@ def reconcile_cmd(args: argparse.Namespace) -> int:
         print(f"{split.merged} lignes d'effectif détachées d'un homonyme impossible (âge ou carrière incompatibles), rendues à un joueur sans lien")
         for b in split.blocked:
             print("  refusé :", b)
-    split = split_implausible_stays(con)
-    if split.merged or split.blocked:
-        print(f"{split.merged} lignes d'effectif détachées d'un homonyme impossible (âge ou carrière incompatibles), rendues à un joueur sans lien")
-        for b in split.blocked:
-            print("  refusé :", b)
     before = con.execute("SELECT count(*) FROM player").fetchone()[0]
     r = reconcile_players(con, clients)
     after = con.execute("SELECT count(*) FROM player").fetchone()[0]
@@ -696,6 +691,16 @@ def fix_player_cmd(args: argparse.Namespace) -> int:
     return 0
 
 
+def recover_work_cmd(args: argparse.Namespace) -> int:
+    """Reprend les données de travail qu'une reconstruction depuis une ancienne release avait perdues (mouvements, joueurs prêtés, libellés…)."""
+    from openfootball.worksnap import recover_work
+    con = connect(args.db)
+    migrate(con)
+    done = recover_work(con, args.source)
+    print("récupéré :", ", ".join(f"{k} {v}" for k, v in done.items()))
+    return 0
+
+
 def restore_db_cmd(args: argparse.Namespace) -> int:
     """Reconstitue une base DuckDB de travail depuis une release de données (voir docs/fr/restoring-a-database.md)."""
     import tempfile
@@ -852,6 +857,10 @@ def main(argv: list[str] | None = None) -> int:
     rd.add_argument("--db", default=DB_DEFAULT, help="base à créer (ne doit pas exister)")
     rd.add_argument("--verify", action="store_true", help="ré-exporte la base restaurée et compare le nombre de lignes à la release")
     rd.set_defaults(func=restore_db_cmd)
+    rw = sub.add_parser("recover-work", help="reprend mouvements, joueurs prêtés, libellés, alias et corrections depuis une ancienne base de travail")
+    rw.add_argument("--from", dest="source", required=True, help="ancienne base de travail (ouverte en lecture seule)")
+    rw.add_argument("--db", default=DB_DEFAULT, help="base à compléter (faites une sauvegarde avant)")
+    rw.set_defaults(func=recover_work_cmd)
     pf = sub.add_parser("profiles", help="profil des joueurs (lieu de naissance, taille, photo) depuis l'infobox")
     pf.add_argument("--db", default=DB_DEFAULT)
     pf.add_argument("--offline", action="store_true", help="cache seulement : aucune requête Wikipedia")

@@ -402,6 +402,17 @@ TABLES_EN: dict[str, tuple[str, str, dict[str, str]]] = {
     ),
 }
 
+WORK_EN = ("Work tables (`work`)",
+           "`work_*/` files of the manifest (`work` key): what the working database keeps beyond the Parquet files the website reads. They rebuild a COMPLETE database "
+           "(`openfootball restore-db`) and are not read by the website. They carry natural keys (club title, season, player QID or name), never an internal number.",
+           {"squad_movement": "player movements: date, transfer window, origin or destination club, loan or transfer",
+            "loan_out": "players loaned out elsewhere (not in their parent club's squad, hence not in `squad`)",
+            "entity_label": "English and French labels of Wikidata entities (cities, stadiums, leagues, clubs)",
+            "player_alias": "name patches mapping a player name to their Wikipedia page",
+            "amendment_log": "log of corrections made to seasons or club-seasons",
+            "competition_wikidata": "Wikidata identifier of competitions",
+            "club_work": "Wikidata identifiers of clubs (country, city, stadium, league) whose labels are in `entity_label`"})
+
 INTRO_EN = """# OpenFootballBase — data dictionary
 
 Football club squads by season, built **only** from Wikipedia (CC BY-SA 4.0) and Wikidata (CC0).

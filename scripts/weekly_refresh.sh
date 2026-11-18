@@ -17,6 +17,11 @@ trap 'rmdir "$LOCK"' EXIT
 
 echo "##### début $(date +%FT%T)"
 LAST=$(gh release list --limit 1 --json tagName -q '.[0].tagName')
+# Une release d'avant la Data 1.22.0 n'a pas la clé « work » (mouvements, prêts, libellés…) : une base reconstruite depuis elle serait INCOMPLÈTE et la prochaine release
+# publiée perdrait ces données. On refuse avant tout calcul ; republier d'abord depuis une base complète (openfootball recover-work, puis export).
+mkdir -p /tmp/prev && gh release download "$LAST" --pattern "*-data.tar.gz" --dir /tmp/prev --clobber
+tar -xzOf /tmp/prev/*-data.tar.gz manifest.json > /tmp/prev/manifest.json
+grep -q '"work"' /tmp/prev/manifest.json || { echo "la release $LAST n'a pas de données de travail (clé work) : reconstruire depuis elle perdrait mouvements, prêts et libellés. Abandon."; exit 1; }
 # Base de travail reconstruite à chaque passage depuis la dernière release publiée : on repart toujours de ce que le site affiche, sans dérive ni reste d'un essai.
 if [ -f "$DB" ]; then mv "$DB" "data/work/backups/openfootball_avant_$STAMP.duckdb"; fi   # l'ancienne base est gardée (3 dernières)
 { ls -1t data/work/backups/*.duckdb 2>/dev/null || true; } | tail -n +4 | xargs -r rm -f   # sans sauvegarde (premier passage dans un dossier neuf), rien à faire

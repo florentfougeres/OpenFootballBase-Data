@@ -83,3 +83,17 @@ def test_turkish_stats_table_and_scorer_tables():
             "<tr><td>1</td><td>Ciro Immobile</td><td>15</td></tr></table>")
     got = parse_squad_html(html, "tr")
     assert [(e.name, e.position) for e in got] == [("Fernando Muslera", "GK"), ("Davinson Sánchez", "MF")]
+
+
+# Rendu des pages françaises (AJ Auxerre) : une clé de tri cachée précède le nom visible, elle n'en fait pas partie.
+HIDDEN_SORT_KEY = """
+<h2>Effectif professionnel</h2>
+<table class="wikitable"><tr><th>N°</th><th>Nat.</th><th>Nom</th><th>Poste</th></tr>
+<tr><td>3</td><td><img alt="FRA"></td><td><span style="display:none;">Akpa, Clément</span><span class="vcard"><span class="fn"><a title="Clément Akpa">Clément Akpa</a></span></span></td><td>D</td></tr>
+<tr><td>5</td><td><img alt="FRA"></td><td><span style="display: none">Ben Fredj, Mohamed</span><span class="fn">Mohamed Ben Fredj</span></td><td>M</td></tr>
+</table>
+"""
+
+
+def test_hidden_sort_key_is_not_glued_to_the_visible_name():
+    assert [x.name for x in parse_squad_html(HIDDEN_SORT_KEY, "fr")] == ["Clément Akpa", "Mohamed Ben Fredj"]

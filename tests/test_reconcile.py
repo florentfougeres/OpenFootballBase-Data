@@ -298,3 +298,60 @@ def test_homonyme_impossible_detache_puis_rendu_a_un_joueur_sans_lien(con):
     loose = con.execute("SELECT id FROM player WHERE name = 'Joshua King' AND link_title IS NULL").fetchone()[0]
     assert con.execute("SELECT player_id FROM player_club_season WHERE id = 9").fetchone()[0] == loose
     assert implausible_stays(con) == []                                    # idempotent
+
+
+def _career_spell(con, rid, pid, seq, club_link, club_name, start, end):
+    con.execute("INSERT INTO player_career (id, player_id, seq, start_year, end_year, years_raw, club_name, club_link, source_lang, source_title) "
+                "VALUES (?, ?, ?, ?, ?, '', ?, ?, 'en', 't')", [rid, pid, seq, start, end, club_name, club_link])
+
+
+def _nancy_db():
+    """Housni : fiche identifiée (carrière « AS Nancy Lorraine » / « Nancy ») et doublon sans lien dans l'effectif de « AS Nancy »."""
+    c = duckdb.connect(":memory:")
+    migrate(c)
+    c.execute("INSERT INTO country VALUES ('FRA', 'France', 'France')")
+    c.execute("INSERT INTO competition (id, code, name_en, name_fr, country_code, level) VALUES (1, 'FRA-L2', 'L2', 'L2', 'FRA', 2)")
+    c.execute("INSERT INTO season (id, start_year, label) VALUES (1, 2026, '2026/27')")
+    c.execute("INSERT INTO club (id, name_en, country_code, wikipedia_title, wikidata_qid) VALUES (1, 'AS Nancy', 'FRA', 'AS Nancy', 'Q100')")
+    c.execute("INSERT INTO club_season (id, club_id, season_id, competition_id) VALUES (1, 1, 1, 1)")
+    c.execute("INSERT INTO player (id, name, link_lang, link_title) VALUES (1, 'Ilyes Housni', 'en', 'Ilyes Housni')")
+    c.execute("INSERT INTO player_wikidata VALUES (1, 'Q1')")
+    c.execute("INSERT INTO player (id, name) VALUES (2, 'Ilyes Housni')")
+    c.execute("INSERT INTO player_club_season (id, player_id, club_season_id, confidence, source) VALUES (1, 2, 1, 'attested', 'wikipedia_season')")
+    return c
+
+
+def test_same_club_is_recognised_by_its_wikidata_id_not_only_by_its_name():
+    from openfootball.reconcile import reconcile_by_name
+    c = _nancy_db()
+    _career_spell(c, 1, 1, 1, "AS Nancy Lorraine", "Nancy", 2026, None)             # le nom ne suffit pas : « AS Nancy » ≠ « AS Nancy Lorraine »
+    assert reconcile_by_name(c).merged == 0
+    c.execute("INSERT INTO club_link_qid VALUES ('AS Nancy Lorraine', 'Q100')")      # la redirection est résolue en QID : même club
+    r = reconcile_by_name(c)
+    assert (r.merged, r.unresolved) == (1, 0)
+    assert c.execute("SELECT count(*) FROM player WHERE name = 'Ilyes Housni'").fetchone()[0] == 1
+    assert c.execute("SELECT count(*) FROM player_club_season WHERE player_id = 1").fetchone()[0] == 1
+
+
+def test_another_club_with_another_qid_is_never_accepted_as_proof():
+    from openfootball.reconcile import reconcile_by_name
+    c = _nancy_db()
+    _career_spell(c, 1, 1, 1, "Olympique de Marseille", "Marseille", 2026, None)
+    c.execute("INSERT INTO club_link_qid VALUES ('Olympique de Marseille', 'Q999')")
+    assert reconcile_by_name(c).merged == 0
+
+
+def test_dots_in_club_initials_do_not_prevent_the_match():
+    from openfootball.reconcile import _club_key, _supported
+    assert _club_key("A.S. Roma") == _club_key("AS Roma")
+    assert _supported([("A.S. Roma", "A.S. Roma", 2017, 2018)], "AS Roma", 2016)
+
+
+def test_sort_key_glued_to_a_name_is_repaired():
+    from openfootball.reconcile import normalize_player_names
+    c = duckdb.connect(":memory:")
+    migrate(c)
+    for pid, name in ((1, "Akpa, ClémentClément Akpa"), (2, "Ben Fredj, MohamedMohamed Ben Fredj"), (3, "Dupont, Jean"), (4, "Jean Dupont")):
+        c.execute("INSERT INTO player (id, name) VALUES (?, ?)", [pid, name])
+    assert normalize_player_names(c) == 2
+    assert [r[0] for r in c.execute("SELECT name FROM player ORDER BY id").fetchall()] == ["Clément Akpa", "Mohamed Ben Fredj", "Dupont, Jean", "Jean Dupont"]

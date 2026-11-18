@@ -280,6 +280,8 @@ def export_all(con: duckdb.DuckDBPyConnection, out_dir: str | Path) -> dict:
         FROM competition_entry e JOIN season s ON s.id = e.season_id JOIN competition co ON co.id = e.competition_id
         JOIN club cl ON cl.id = e.club_id
         ORDER BY 1, 2, 3""", out, "competition_club", "competition_club")
+    from openfootball.worksnap import export_work
+    manifest["work"] = export_work(con, out)             # tables de travail (mouvements, prêts, libellés…) : une base restaurée ne les perd plus ; le site ne les lit pas
     manifest["home"] = _write_home(con, out, manifest)
     (out / "SCHEMA.md").write_text(build_schema_doc(out, manifest, "en"), encoding="utf-8")      # dictionnaire de données, joint à la release
     (out / "SCHEMA.fr.md").write_text(build_schema_doc(out, manifest, "fr"), encoding="utf-8")
