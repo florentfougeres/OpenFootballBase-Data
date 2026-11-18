@@ -113,7 +113,7 @@ Pour reconstituer la base DuckDB de travail complète depuis une release, sans r
 
 ## Lancer le pipeline
 
-Prérequis : **Python ≥ 3.11**, **Node.js ≥ 22** (site), **git**, et la CLI `gh` pour publier.
+Prérequis : **Python ≥ 3.11**, **git**, et la CLI `gh` pour publier.
 
 ```bash
 git clone https://github.com/florentfougeres/OpenFootballBase-Data.git && cd OpenFootballBase-Data
@@ -129,19 +129,16 @@ La base de travail est `data/work/openfootball.duckdb` (locale, hors git, enviro
 # 1. Mettre à jour la saison en cours (ou en ajouter une) : sauvegarde, backfill, rattachement, carrières, âges, export
 tools/refresh.sh --open-season 2026 2026
 
-# 2. Voir le résultat en local
-cd web && npm install && npm run dev            # http://localhost:5173, lit web/public/data
-
-# 3. Publier les données et le site — voir docs/fr/publishing-a-release.md
+# 2. Publier les données et le site — voir docs/fr/publishing-a-release.md (le site est dans le dépôt OpenFootballBase)
 openfootball export --out dist/data --archive dist/openfootballbase-data.tar.gz --previous manifest-precedent.json
 gh release create data-1.10.1 dist/openfootballbase-data.tar.gz --target main --title "Data 1.10.1" --notes "…"
 ```
 
-Les releases s'appellent `Data X.Y.Z` et ont pour tag `data-X.Y.Z` ([versionnage sémantique](https://semver.org/lang/fr/) : un nouveau championnat ou une nouvelle table est une version mineure, une correction de données un correctif, un changement de schéma incompatible une version majeure). Le site est déployé depuis la dernière release par GitHub Actions.
+Les releases s'appellent `Data X.Y.Z` et ont pour tag `data-X.Y.Z` ([versionnage sémantique](https://semver.org/lang/fr/) : un nouveau championnat ou une nouvelle table est une version mineure, une correction de données un correctif, un changement de schéma incompatible une version majeure). Le site (dépôt [OpenFootballBase](https://github.com/florentfougeres/OpenFootballBase)) se redéploie tout seul quand une release est publiée (`notify-site.yml`).
 
 ## Le site
 
-Un site statique [Svelte](https://svelte.dev) : tableaux de bord par championnat, fiches de club avec effectif et mouvements d'une saison à l'autre, fiches joueur avec frise de carrière, grille de chaleur de la couverture, recherche de joueurs avec filtres et export CSV. DuckDB-WASM lit les fichiers Parquet par requêtes HTTP à plages : il n'y a pas de serveur. Le moteur DuckDB est servi par le site lui-même, et une politique de sécurité de contenu (CSP) limite ce que la page peut charger.
+Le site est une application Svelte statique dans son propre dépôt, [OpenFootballBase](https://github.com/florentfougeres/OpenFootballBase) : elle lit les fichiers Parquet de la dernière release dans le navigateur avec DuckDB-WASM (pas de serveur, pas de cookies). Site en ligne : <https://florentfougeres.github.io/OpenFootballBase/>.
 
 ## Documentation
 
@@ -164,7 +161,6 @@ Voir aussi : [prise en main](docs/fr/getting-started.md) · [architecture](docs/
 ```
 openfootball/   pipeline Python : sources/ (Wikipedia, Wikidata), parse/ (analyseurs), scopes/ (un TOML par pays),
                 migrations/ (schéma DuckDB), backfill, reconcile, careers, enrich, export, CLI
-web/            site Svelte + Vite + Tailwind (DuckDB-WASM)
 tools/          refresh.sh (mise à jour complète) ; world_clubs/ (extraction Wikidata des clubs du monde)
 data/source/    clubs_football.csv (clubs du monde importés dans la base)
 docs/           guides d'exploitation         tests/  tests et fixtures wikitext

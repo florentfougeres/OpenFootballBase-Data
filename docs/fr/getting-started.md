@@ -42,13 +42,7 @@ Trois règles qui font gagner du temps : **une seule commande en écriture à la
 
 ## Je veux travailler sur le site
 
-```bash
-openfootball restore-db --release latest                 # ou votre propre base
-openfootball export --out web/public/data
-cd web && npm install && npm run dev                     # http://localhost:5173
-```
-
-Voir [website.md](website.md).
+Le site vit dans son propre dépôt, [OpenFootballBase](https://github.com/florentfougeres/OpenFootballBase) : voir son [guide de démarrage](https://github.com/florentfougeres/OpenFootballBase/blob/main/docs/fr/getting-started.md) (`npm run data` télécharge la dernière release de ce dépôt).
 
 ## Je veux contribuer
 

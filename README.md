@@ -113,7 +113,7 @@ To rebuild the full working DuckDB database from a release instead of running th
 
 ## Run the pipeline
 
-Requirements: **Python ≥ 3.11**, **Node.js ≥ 22** (website), **git**, and the `gh` CLI to publish.
+Requirements: **Python ≥ 3.11**, **git**, and the `gh` CLI to publish.
 
 ```bash
 git clone https://github.com/florentfougeres/OpenFootballBase-Data.git && cd OpenFootballBase-Data
@@ -129,19 +129,16 @@ The working database is `data/work/openfootball.duckdb` (local, not in git, abou
 # 1. Update the current season (or add one): backup, backfill, matching, careers, ages, export
 tools/refresh.sh --open-season 2026 2026
 
-# 2. Browse the result locally
-cd web && npm install && npm run dev            # http://localhost:5173, reads web/public/data
-
-# 3. Publish data and site — see docs/en/publishing-a-release.md
+# 2. Publish data and site — see docs/en/publishing-a-release.md (the website is in the OpenFootballBase repository)
 openfootball export --out dist/data --archive dist/openfootballbase-data.tar.gz --previous previous-manifest.json
 gh release create data-1.10.1 dist/openfootballbase-data.tar.gz --target main --title "Data 1.10.1" --notes "…"
 ```
 
-Releases are named `Data X.Y.Z` and tagged `data-X.Y.Z` ([semantic versioning](https://semver.org): a new league or table is a minor version, a data fix a patch, an incompatible schema change a major). The website is deployed from the latest release by GitHub Actions.
+Releases are named `Data X.Y.Z` and tagged `data-X.Y.Z` ([semantic versioning](https://semver.org): a new league or table is a minor version, a data fix a patch, an incompatible schema change a major). The website (repository [OpenFootballBase](https://github.com/florentfougeres/OpenFootballBase)) is redeployed by itself when a release is published (`notify-site.yml`).
 
 ## The website
 
-A static [Svelte](https://svelte.dev) site: league dashboards, club pages with squad and movements between seasons, player pages with career timeline, a coverage heat map, a player search with filters and CSV export. DuckDB-WASM reads the Parquet files over HTTP range requests, so there is no backend. The DuckDB engine is served from the site itself, and a Content-Security-Policy restricts what the page can load.
+The site is a static Svelte application in its own repository, [OpenFootballBase](https://github.com/florentfougeres/OpenFootballBase): it reads the Parquet files of the latest release in the browser with DuckDB-WASM (no server, no cookies). Live site: <https://florentfougeres.github.io/OpenFootballBase/>.
 
 ## Documentation
 
@@ -166,7 +163,6 @@ Also: [getting started](docs/en/getting-started.md) · [architecture](docs/en/ar
 ```
 openfootball/   Python pipeline: sources/ (Wikipedia, Wikidata), parse/ (parsers), scopes/ (one TOML per country),
                 migrations/ (DuckDB schema), backfill, reconcile, careers, enrich, export, CLI
-web/            Svelte + Vite + Tailwind website (DuckDB-WASM)
 tools/          refresh.sh (full update); world_clubs/ (Wikidata extraction of the world's clubs)
 data/source/    clubs_football.csv (world clubs imported into the database)
 docs/           how-to guides         tests/  tests and wikitext fixtures

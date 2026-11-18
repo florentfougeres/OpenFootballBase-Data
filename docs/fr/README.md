@@ -9,7 +9,7 @@
 | [getting-started.md](getting-started.md) | Par où commencer, selon ce que vous voulez faire |
 | [architecture.md](architecture.md) | Flux des données, organisation du dépôt, idées directrices, modèle de base |
 | [data-model.md](data-model.md) | Les tables Parquet publiées : colonnes, clés, précautions |
-| [website.md](website.md) | Le site Svelte : plan du code, chargement des données, en-têtes de sécurité |
+| [Le site](https://github.com/florentfougeres/OpenFootballBase/blob/main/docs/fr/website.md) | Le site Svelte (autre dépôt `OpenFootballBase`) : plan du code, chargement des données, en-têtes de sécurité |
 | [faq.md](faq.md) | Méthode, limites, licences, comment citer |
 | [security.md](security.md) | Signalement, protections en place, limites connues |
 | [spec.md](spec.md) | Journal de conception : décisions et résultats mesurés |

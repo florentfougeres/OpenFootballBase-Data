@@ -6,13 +6,13 @@ Thank you for helping. Contributions that matter most: **new countries** (a scop
 
 ## Set up
 
-See [getting-started.md](getting-started.md). You need Python ≥ 3.11 and, for the website, Node.js ≥ 22. Always set `OPENFOOTBALL_CONTACT` to a real public contact (a repository URL, never a personal e-mail).
+See [getting-started.md](getting-started.md). You need Python ≥ 3.11 (the website is in [OpenFootballBase](https://github.com/florentfougeres/OpenFootballBase)). Always set `OPENFOOTBALL_CONTACT` to a real public contact (a repository URL, never a personal e-mail).
 
 ## Workflow
 
 1. Open an issue for anything bigger than a small fix, so we can agree on the approach.
 2. Branch, make a focused change, **add or update tests**. Parser tests use small, real, frozen excerpts of Wikipedia pages in `tests/fixtures/`.
-3. Run `pytest -q` and, for the website, `npm run check && npm run build` (in `web/`).
+3. Run `pytest -q`.
 4. Open a pull request describing what changes and why. CI runs the same checks.
 
 ## Principles to respect
@@ -31,7 +31,7 @@ Every change to the documentation or to the README **must be made in both langua
 - `README.md` (English) and `README.fr.md` (French) are edited together.
 - Each guide exists as `docs/en/<name>.md` and `docs/fr/<name>.md` with the same file name, structure and links; each starts with a link to the other language.
 - That includes the specification, the roadmap and the changelog (`docs/{fr,en}/spec.md`, `roadmap.md`, `changelog.md`).
-- User-facing strings of the website go in both languages of `web/src/lib/i18n.ts`; the data dictionary descriptions in both `schema_doc.py` and `schema_doc_en.py` (a test checks they stay in sync).
+- Data dictionary descriptions in both `schema_doc.py` and `schema_doc_en.py` (a test checks they stay in sync).
 - When you add a doc, add it to both indexes (`docs/en/README.md`, `docs/fr/README.md`).
 
 ## Conventions

@@ -136,6 +136,7 @@ Les releases de données publiées, la plus récente d'abord. Les noms suivent l
 ## Site et outils
 
 ### 2026-11-18
+- **Deux dépôts** : ce dépôt contient désormais le pipeline, les tests et les releases de données ; le site reste dans [OpenFootballBase](https://github.com/florentfougeres/OpenFootballBase). Publier une release lance le déploiement du site (`notify-site.yml`, secret `SITE_DEPLOY_TOKEN`). La release Data 1.21.0 a été republiée ici à l'identique ; les précédentes restent dans le dépôt du site. Plan : [migration-two-repos.md](https://github.com/florentfougeres/OpenFootballBase/blob/main/docs/fr/migration-two-repos.md).
 - **Page Compétitions** : une vue Clubs (par confédération, puis une rubrique « Monde » pour les coupes intercontinentales, qui ne sont plus mélangées à l'UEFA) et une vue Équipes nationales (phases finales, qualifications, amicaux), avec des icônes et les logos Wikipedia des compétitions ; celles que seule la source de matchs connaît sont dans leur continent.
 - **Onglet Résultats** sur chaque page de compétition : classement calculé avec la forme, matchs par journée avec les buteurs ; onglet Palmarès aligné sur le palmarès des clubs. Script hebdomadaire : `matches` (résultats, puis complément de la saison en cours depuis Wikipedia) et `enrich --what leaguelogos` à sa suite.
 
@@ -144,7 +145,7 @@ Les releases de données publiées, la plus récente d'abord. Les noms suivent l
 - **Mise à jour hebdomadaire** (`scripts/weekly_refresh.sh`, [weekly-refresh.md](weekly-refresh.md)) : script pour un cron sur serveur qui relit les joueurs encore en activité (infobox de carrière et tableaux de statistiques), exporte et publie une release. Nouvelle option `stats --active`.
 
 ### 2026-11-13
-- **Sécurité et vitesse** : politique de sécurité de contenu (CSP) ; le moteur DuckDB est vérifié par une empreinte SHA-384 et son extension Parquet est hébergée avec le site (voir [security.md](security.md), [website.md](website.md)) ; `restore-db` vérifie le SHA-256 de chaque fichier ; le déploiement télécharge la release qui l'a déclenché ; actions GitHub figées par SHA ; Dependabot, analyse de secrets et protection au push activés.
+- **Sécurité et vitesse** : politique de sécurité de contenu (CSP) ; le moteur DuckDB est vérifié par une empreinte SHA-384 et son extension Parquet est hébergée avec le site (voir [security.md](security.md), [website.md](https://github.com/florentfougeres/OpenFootballBase/blob/main/docs/fr/website.md)) ; `restore-db` vérifie le SHA-256 de chaque fichier ; le déploiement télécharge la release qui l'a déclenché ; actions GitHub figées par SHA ; Dependabot, analyse de secrets et protection au push activés.
 - **Releases renommées** `Data X.Y.Z` avec le tag `data-X.Y.Z` (elles s'appelaient `data-v1` … `data-v13`, avec des noms comme « Data v1.10.0 (date) »).
 - **Dictionnaire de données bilingue** (`SCHEMA.md` en anglais, `SCHEMA.fr.md` en français) et documentation bilingue sous `docs/fr/` et `docs/en/` ; README bilingue.
 - **Page Compétitions** : grille uniforme groupée par confédération ; les coupes continentales apparaissent dans leur confédération.

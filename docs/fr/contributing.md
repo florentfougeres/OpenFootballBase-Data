@@ -6,13 +6,13 @@ Merci d'aider. Les contributions qui comptent le plus : **de nouveaux pays** (un
 
 ## Installer
 
-Voir [getting-started.md](getting-started.md). Il faut Python ≥ 3.11 et, pour le site, Node.js ≥ 22. Renseignez toujours `OPENFOOTBALL_CONTACT` avec un vrai contact public (l'adresse d'un dépôt, jamais un e-mail personnel).
+Voir [getting-started.md](getting-started.md). Il faut Python ≥ 3.11 (le site est dans [OpenFootballBase](https://github.com/florentfougeres/OpenFootballBase)). Renseignez toujours `OPENFOOTBALL_CONTACT` avec un vrai contact public (l'adresse d'un dépôt, jamais un e-mail personnel).
 
 ## Déroulé
 
 1. Ouvrez une issue pour tout ce qui dépasse une petite correction, afin de s'accorder sur l'approche.
 2. Créez une branche, faites un changement ciblé, **ajoutez ou mettez à jour les tests**. Les tests d'analyseurs utilisent de petits extraits réels et figés de pages Wikipedia dans `tests/fixtures/`.
-3. Lancez `pytest -q` et, pour le site, `npm run check && npm run build` (dans `web/`).
+3. Lancez `pytest -q`.
 4. Ouvrez une pull request qui dit ce qui change et pourquoi. La CI lance les mêmes contrôles.
 
 ## Principes à respecter
@@ -31,7 +31,7 @@ Toute modification de la documentation ou du README **doit être faite dans les 
 - `README.md` (anglais) et `README.fr.md` (français) se modifient ensemble.
 - Chaque guide existe en `docs/en/<nom>.md` et `docs/fr/<nom>.md`, avec le même nom de fichier, la même structure et les mêmes liens ; chacun commence par un lien vers l'autre langue.
 - Cela inclut la spécification, la feuille de route et le journal des changements (`docs/{fr,en}/spec.md`, `roadmap.md`, `changelog.md`).
-- Les textes visibles du site vont dans les deux langues de `web/src/lib/i18n.ts` ; les descriptions du dictionnaire de données dans `schema_doc.py` et `schema_doc_en.py` (un test vérifie qu'ils restent alignés).
+- Les descriptions du dictionnaire de données dans `schema_doc.py` et `schema_doc_en.py` (un test vérifie qu'ils restent alignés).
 - Quand vous ajoutez un document, ajoutez-le aux deux index (`docs/en/README.md`, `docs/fr/README.md`).
 
 ## Conventions

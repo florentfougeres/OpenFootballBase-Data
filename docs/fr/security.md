@@ -25,7 +25,7 @@ Il n'y a pas de serveur, pas de compte, pas de contenu produit par les visiteurs
 
 ## Limites connues
 
-- Le moteur de requêtes vient encore de jsDelivr à l'exécution (avec contrôle d'intégrité). L'héberger nous-mêmes est possible mais double le téléchargement de la première visite (voir [website.md](website.md)).
+- Le moteur de requêtes vient encore de jsDelivr à l'exécution (avec contrôle d'intégrité). L'héberger nous-mêmes est possible mais double le téléchargement de la première visite (voir [website.md](https://github.com/florentfougeres/OpenFootballBase/blob/main/docs/fr/website.md)).
 - Les logos de clubs et les photos de joueurs sont liés directement depuis Wikimedia ; les navigateurs des visiteurs contactent les serveurs de Wikimedia.
 - L'export CSV neutralise guillemets et séparateurs mais pas les formules de tableur (`=`, `+`, `-`, `@`) dans les noms issus de Wikipedia.
 - La protection de la branche `main` n'est pas activée (projet à un seul mainteneur) ; à activer si plusieurs personnes poussent.

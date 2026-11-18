@@ -25,7 +25,7 @@ There is no backend, no account, no user-generated content and no secret in the 
 
 ## Known limits
 
-- The query engine still comes from jsDelivr at run time (integrity-checked). Hosting it ourselves is possible but doubles the first-load download (see [website.md](website.md)).
+- The query engine still comes from jsDelivr at run time (integrity-checked). Hosting it ourselves is possible but doubles the first-load download (see [website.md](https://github.com/florentfougeres/OpenFootballBase/blob/main/docs/en/website.md)).
 - Club logos and player photos are hotlinked from Wikimedia; visitors' browsers contact Wikimedia servers.
 - The CSV export neutralises quotes and separators but not spreadsheet formulas (`=`, `+`, `-`, `@`) in names that come from Wikipedia.
 - Branch protection on `main` is not enabled (solo project); enable it if more people push.

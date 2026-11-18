@@ -2,7 +2,7 @@
 
 [Français](../fr/architecture.md)
 
-OpenFootballBase has three parts: a **Python pipeline** that reads Wikipedia and Wikidata into a local DuckDB database, an **export** that turns that database into versioned Parquet files published as GitHub releases, and a **static website** that reads those files in the browser. The design log (why each choice was made) is in [spec.md](spec.md).
+This repository holds a **Python pipeline** that reads Wikipedia, Wikidata and the open OpenFootball data into a local DuckDB database, an **export** that turns that database into versioned Parquet files, and the **releases** that publish them. The **static website** that reads those files in the browser is in its own repository, [OpenFootballBase](https://github.com/florentfougeres/OpenFootballBase) ([architecture there](https://github.com/florentfougeres/OpenFootballBase/blob/main/docs/en/architecture.md)). The design log (why each choice was made) is in [spec.md](spec.md).
 
 ## Data flow
 
@@ -16,7 +16,7 @@ Wikipedia + Wikidata ──(sources/: fetch, disk cache, backoff)──▶ parse
                                                                       ▼
                                            export ──▶ Parquet + manifest.json + SCHEMA.md ──▶ GitHub release (Data X.Y.Z)
                                                                                                       │
-                                              GitHub Actions: deploy.yml downloads the release ──▶ web/ build ──▶ GitHub Pages
+                                              notify-site.yml ──▶ OpenFootballBase: deploy.yml downloads the release ──▶ GitHub Pages
                                                                                                       │
                                                       Browser: DuckDB-WASM reads the Parquet files by HTTP range requests
 ```
@@ -34,7 +34,6 @@ Wikipedia + Wikidata ──(sources/: fetch, disk cache, backoff)──▶ parse
 | `openfootball/reconcile.py`, `careers.py`, `transfers.py`, `enrich.py` | Player identity by QID, careers and caps, movements and loans, links/labels/logos. |
 | `openfootball/checks.py`, `export.py`, `schema_doc.py` (+ `_en`), `restore.py`, `progress.py` | Invariants, Parquet export and release archive, bilingual data dictionary, rebuilding a database from a release, `PROGRESS.md`. |
 | `openfootball/cli.py` | The `openfootball` command ([commands.md](commands.md)). |
-| `web/` | Svelte 5 + Vite + Tailwind 4 site ([website.md](website.md)). |
 | `tools/` | `refresh.sh` (full update), `world_clubs/` (Wikidata extraction of the world's clubs). |
 | `tests/` | pytest suite with wikitext fixtures. |
 | `docs/` | This documentation (`fr/` and `en/`). |

@@ -136,6 +136,7 @@ Published data releases, newest first. Names follow [semantic versioning](https:
 ## Site and tooling
 
 ### 2026-11-18
+- **Two repositories**: this repository now holds the pipeline, the tests and the data releases; the website stays in [OpenFootballBase](https://github.com/florentfougeres/OpenFootballBase). Publishing a release starts the site deployment (`notify-site.yml`, secret `SITE_DEPLOY_TOKEN`). The Data 1.21.0 release was republished here identically; earlier releases stay in the website repository. Plan: [migration-two-repos.md](https://github.com/florentfougeres/OpenFootballBase/blob/main/docs/en/migration-two-repos.md).
 - **Competitions page**: a Clubs view (by confederation, then a "World" section for intercontinental cups, no longer mixed with UEFA) and a National teams view (finals, qualifiers, friendlies), with icons and the competitions' Wikipedia logos; competitions known only from the match source sit in their continent.
 - **Results tab** on every competition page: computed standings with form, matches by matchday with goalscorers; honours tab aligned with the club honours panel. Weekly script: `matches` (results, then current-season completion from Wikipedia) and `enrich --what leaguelogos` after it.
 
@@ -144,7 +145,7 @@ Published data releases, newest first. Names follow [semantic versioning](https:
 - **Weekly refresh** (`scripts/weekly_refresh.sh`, [weekly-refresh.md](weekly-refresh.md)): script for a server cron that re-reads the players still active (career infobox and statistics tables), exports and publishes a release. New option `stats --active`.
 
 ### 2026-11-13
-- **Security and speed**: Content-Security-Policy; the DuckDB engine is verified by a SHA-384 integrity hash and its Parquet extension is hosted with the site (see [security.md](security.md), [website.md](website.md)); `restore-db` verifies every file's SHA-256; deployment downloads the release that triggered it; GitHub Actions pinned by SHA; Dependabot, secret scanning and push protection enabled.
+- **Security and speed**: Content-Security-Policy; the DuckDB engine is verified by a SHA-384 integrity hash and its Parquet extension is hosted with the site (see [security.md](security.md), [website.md](https://github.com/florentfougeres/OpenFootballBase/blob/main/docs/en/website.md)); `restore-db` verifies every file's SHA-256; deployment downloads the release that triggered it; GitHub Actions pinned by SHA; Dependabot, secret scanning and push protection enabled.
 - **Releases renamed** `Data X.Y.Z` with tag `data-X.Y.Z` (they used to be `data-v1` … `data-v13` with names like "Data v1.10.0 (date)").
 - **Bilingual data dictionary** (`SCHEMA.md` in English, `SCHEMA.fr.md` in French) and bilingual documentation under `docs/fr/` and `docs/en/`; bilingual README.
 - **Competitions page**: uniform grid grouped by confederation; continental cups appear under their confederation.

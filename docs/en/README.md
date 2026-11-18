@@ -9,7 +9,7 @@
 | [getting-started.md](getting-started.md) | Where to begin, depending on what you want to do |
 | [architecture.md](architecture.md) | Data flow, repository layout, key ideas, database model |
 | [data-model.md](data-model.md) | The published Parquet tables: columns, keys, caveats |
-| [website.md](website.md) | The Svelte site: code map, data loading, security headers |
+| [The website](https://github.com/florentfougeres/OpenFootballBase/blob/main/docs/en/website.md) | The Svelte site (other repository `OpenFootballBase`): code map, data loading, security headers |
 | [faq.md](faq.md) | Method, limits, licences, how to cite |
 | [security.md](security.md) | Reporting, controls in place, known limits |
 | [spec.md](spec.md) | Design log: decisions and measured results |

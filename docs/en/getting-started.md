@@ -42,13 +42,7 @@ Three rules that save time: **one writing command at a time** on the DuckDB data
 
 ## I want to work on the website
 
-```bash
-openfootball restore-db --release latest                 # or use your own database
-openfootball export --out web/public/data
-cd web && npm install && npm run dev                     # http://localhost:5173
-```
-
-See [website.md](website.md).
+The site lives in its own repository, [OpenFootballBase](https://github.com/florentfougeres/OpenFootballBase): see its [getting-started guide](https://github.com/florentfougeres/OpenFootballBase/blob/main/docs/en/getting-started.md) (`npm run data` downloads the latest release of this repository).
 
 ## I want to contribute
 
