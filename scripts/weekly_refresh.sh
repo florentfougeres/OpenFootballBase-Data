@@ -19,7 +19,7 @@ echo "##### début $(date +%FT%T)"
 LAST=$(gh release list --limit 1 --json tagName -q '.[0].tagName')
 # Base de travail reconstruite à chaque passage depuis la dernière release publiée : on repart toujours de ce que le site affiche, sans dérive ni reste d'un essai.
 if [ -f "$DB" ]; then mv "$DB" "data/work/backups/openfootball_avant_$STAMP.duckdb"; fi   # l'ancienne base est gardée (3 dernières)
-ls -1t data/work/backups/*.duckdb | tail -n +4 | xargs -r rm -f
+{ ls -1t data/work/backups/*.duckdb 2>/dev/null || true; } | tail -n +4 | xargs -r rm -f   # sans sauvegarde (premier passage dans un dossier neuf), rien à faire
 $OF restore-db --release "$LAST" --db "$DB"
 
 $OF careers --active --fresh                           # infobox de carrière + profil
