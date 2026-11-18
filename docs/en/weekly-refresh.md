@@ -22,7 +22,7 @@ crontab -e           # then add the line below: Monday 03:00
 ```
 
 ```cron
-0 3 * * 1 /home/USER/OpenFootballBase/scripts/weekly_refresh.sh
+0 3 * * 1 /home/USER/OpenFootballBase-Data/scripts/weekly_refresh.sh
 ```
 
 ## Publishing
