@@ -1,0 +1,24 @@
+name: Notify site
+
+# Le site (dépôt OpenFootballBase) est reconstruit à partir de la dernière release de CE dépôt.
+# Une release d'un dépôt ne lance pas de workflow d'un autre : on le lance ici avec un jeton à portée minimale
+# (SITE_DEPLOY_TOKEN : jeton « fine-grained », dépôt OpenFootballBase seul, permission Actions en lecture et écriture).
+# Expiration : un an au plus. Passé ce délai le site ne se redéploie plus sans bruit : voir docs/*/publishing-a-release.md.
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Start the site deployment
+        env:
+          GH_TOKEN: ${{ secrets.SITE_DEPLOY_TOKEN }}
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          test -n "$GH_TOKEN" || { echo "secret SITE_DEPLOY_TOKEN missing or expired"; exit 1; }
+          gh workflow run deploy.yml --repo florentfougeres/OpenFootballBase --ref main ${TAG:+-f tag="$TAG"}

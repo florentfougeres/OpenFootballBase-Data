@@ -35,7 +35,7 @@ La règle du produit est Wikipedia + Wikidata seulement ; les données de matchs
 - **Logos de clubs et photos de joueurs** : fichiers Wikimedia, beaucoup non libres (usage loyal). Ils sont affichés à titre d'illustration et **ne sont pas** couverts par la licence des données ; ne les redistribuez pas.
 
 ## Comment citer ce projet ?
-« OpenFootballBase, `Data X.Y.Z` (date), d'après Wikipedia (CC BY-SA 4.0) et Wikidata (CC0), https://github.com/florentfougeres/OpenFootballBase ». Pour un fait précis, citez la page source et la révision indiquées sur l'effectif.
+« OpenFootballBase, `Data X.Y.Z` (date), d'après Wikipedia (CC BY-SA 4.0) et Wikidata (CC0), https://github.com/florentfougeres/OpenFootballBase-Data ». Pour un fait précis, citez la page source et la révision indiquées sur l'effectif.
 
 ## Comment signaler une erreur ?
 Si la page Wikipedia est fausse, corrigez-la là-bas ; la prochaine mise à jour la reprendra. Si c'est notre lecture qui est fausse (un problème d'analyseur), ouvrez une issue avec le club, la saison et la page ([contributing.md](contributing.md)).

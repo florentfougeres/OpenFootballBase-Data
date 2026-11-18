@@ -4,7 +4,7 @@
 
 ## Reporting a vulnerability
 
-Open a [private security advisory](https://github.com/florentfougeres/OpenFootballBase/security/advisories/new) on GitHub (or an issue, if nothing sensitive is involved). Please do not include personal data. We aim to answer within a week.
+Open a [private security advisory](https://github.com/florentfougeres/OpenFootballBase-Data/security/advisories/new) on GitHub (or an issue, if nothing sensitive is involved). Please do not include personal data. We aim to answer within a week.
 
 ## What the project does and does not handle
 

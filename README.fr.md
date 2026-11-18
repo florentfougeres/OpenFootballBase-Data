@@ -9,13 +9,13 @@
 
 <p align="center">
   <a href="https://florentfougeres.github.io/OpenFootballBase/">Site</a> ·
-  <a href="https://github.com/florentfougeres/OpenFootballBase/releases/latest">Télécharger les données</a> ·
+  <a href="https://github.com/florentfougeres/OpenFootballBase-Data/releases/latest">Télécharger les données</a> ·
   <a href="docs/README.md">Documentation</a> ·
   <a href="README.md">English</a>
 </p>
 
 <p align="center">
-  <a href="https://github.com/florentfougeres/OpenFootballBase/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/florentfougeres/OpenFootballBase/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="https://github.com/florentfougeres/OpenFootballBase-Data/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/florentfougeres/OpenFootballBase-Data/actions/workflows/ci.yml/badge.svg"></a>
   <a href="LICENSE"><img alt="Code : MIT" src="https://img.shields.io/badge/code-MIT-blue.svg"></a>
   <img alt="Données : CC BY-SA 4.0" src="https://img.shields.io/badge/donn%C3%A9es-CC%20BY--SA%204.0-lightgrey.svg">
   <img alt="Python 3.11+" src="https://img.shields.io/badge/python-3.11%2B-3776ab.svg">
@@ -28,7 +28,7 @@
 - **Des effectifs saison par saison, de 2000/01 à 2026/27** (5 grands championnats dès 2000/01, les autres dès 2010/11), avec numéro, poste, nationalité et âge, pour 18 championnats de première et deuxième division et les coupes d'Europe de clubs.
 - **Des fiches joueur** : frise de carrière, clubs, prêts, sélections nationales, date et lieu de naissance, et — pour environ 27 000 joueurs — des **statistiques de carrière** par club, saison, compétition et sélection.
 - **Un palmarès** : le vainqueur de chaque saison de 119 compétitions (championnats, coupes nationales et coupes continentales, depuis leurs premières saisons), les titres des clubs, les titres des joueurs avec l'effectif listé, et le classement du **Ballon d'Or** depuis 2000.
-- **Des données ouvertes et réutilisables** : fichiers Parquet publiés à chaque [release](https://github.com/florentfougeres/OpenFootballBase/releases), lisibles avec DuckDB, pandas, Polars ou tout lecteur Parquet.
+- **Des données ouvertes et réutilisables** : fichiers Parquet publiés à chaque [release](https://github.com/florentfougeres/OpenFootballBase-Data/releases), lisibles avec DuckDB, pandas, Polars ou tout lecteur Parquet.
 - **Traçables** : chaque effectif cite la page Wikipedia et la révision d'où il vient. Rien n'est inventé ; un effectif absent reste absent et est signalé comme tel.
 - **Un site statique bilingue** (français / anglais) qui interroge les fichiers Parquet directement dans le navigateur avec DuckDB-WASM — sans serveur, sans analytique, sans cookies.
 - **Un pipeline Python reproductible** qui reconstruit tout depuis Wikipedia et Wikidata.
@@ -93,7 +93,7 @@ Un effectif est **l'union des instantanés publiés sur les pages Wikipedia** d'
 Chaque release publie une archive, `openfootballbase-data.tar.gz`, qui contient les fichiers Parquet, un `manifest.json` (avec le SHA-256 de chaque fichier) et `SCHEMA.md`, le dictionnaire de données.
 
 ```bash
-gh release download --repo florentfougeres/OpenFootballBase --pattern "*-data.tar.gz"
+gh release download --repo florentfougeres/OpenFootballBase-Data --pattern "*-data.tar.gz"
 mkdir data && tar -xzf openfootballbase-data.tar.gz -C data
 ```
 
@@ -116,7 +116,7 @@ Pour reconstituer la base DuckDB de travail complète depuis une release, sans r
 Prérequis : **Python ≥ 3.11**, **Node.js ≥ 22** (site), **git**, et la CLI `gh` pour publier.
 
 ```bash
-git clone https://github.com/florentfougeres/OpenFootballBase.git && cd OpenFootballBase
+git clone https://github.com/florentfougeres/OpenFootballBase-Data.git && cd OpenFootballBase-Data
 python3 -m venv .venv && .venv/bin/pip install -e ".[dev]"
 source .venv/bin/activate                       # la commande `openfootball` devient disponible
 export OPENFOOTBALL_CONTACT="https://github.com/vous/votre-fork"   # ajouté au User-Agent envoyé à Wikipedia/Wikidata (obligatoire)

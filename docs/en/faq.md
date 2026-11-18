@@ -35,7 +35,7 @@ The product's rule is Wikipedia + Wikidata only; match data would need a third s
 - **Club logos and player photos** are Wikimedia files, many non-free (fair use). They are displayed for illustration and are **not** covered by the data licence; do not redistribute them.
 
 ## How do I cite this?
-"OpenFootballBase, `Data X.Y.Z` (date), from Wikipedia (CC BY-SA 4.0) and Wikidata (CC0), https://github.com/florentfougeres/OpenFootballBase". For a single fact, cite the source page and revision given on the squad.
+"OpenFootballBase, `Data X.Y.Z` (date), from Wikipedia (CC BY-SA 4.0) and Wikidata (CC0), https://github.com/florentfougeres/OpenFootballBase-Data". For a single fact, cite the source page and revision given on the squad.
 
 ## How do I report a mistake?
 If the Wikipedia page is wrong, correct it there; the next update picks it up. If our reading is wrong (a parser issue), open an issue with the club, season and page ([contributing.md](contributing.md)).

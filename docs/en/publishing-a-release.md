@@ -3,7 +3,7 @@
 [Français](../fr/publishing-a-release.md)
 
 The site (GitHub Pages) is rebuilt **from the data of the latest GitHub release**. Publishing = export,
-create the release, trigger the deployment. Repository: `florentfougeres/OpenFootballBase`, site:
+create the release, trigger the deployment. Repository: `florentfougeres/OpenFootballBase-Data`, site:
 `https://florentfougeres.github.io/OpenFootballBase/`.
 
 ## Before publishing: checks (5 minutes)
@@ -67,7 +67,7 @@ Type: Minor release (new data)        <!-- Major release | Minor release (new da
 ## Files and sources
 - `openfootballbase-data.tar.gz`: Parquet files, `manifest.json` (SHA-256 of every file), data dictionary `SCHEMA.md` (English) and `SCHEMA.fr.md` (French).
 - Sources: Wikipedia (CC BY-SA 4.0) and Wikidata (CC0).
-- Changelog: https://github.com/florentfougeres/OpenFootballBase/blob/main/docs/en/changelog.md
+- Changelog: https://github.com/florentfougeres/OpenFootballBase-Data/blob/main/docs/en/changelog.md
 
 ---
 
@@ -79,7 +79,7 @@ Type : Version mineure (nouvelles données)   <!-- Version majeure | Version min
 
 ## Fichiers et sources
 - … (même contenu, en français)
-- Journal des changements : https://github.com/florentfougeres/OpenFootballBase/blob/main/docs/fr/changelog.md
+- Journal des changements : https://github.com/florentfougeres/OpenFootballBase-Data/blob/main/docs/fr/changelog.md
 ```
 
 Write the file, then `gh release create data-X.Y.Z … --title "Data X.Y.Z" --notes-file notes.md`. An existing release is fixed with `gh release edit data-X.Y.Z --notes-file notes.md`.
@@ -89,23 +89,23 @@ someone can start from your database without rebuilding everything (≈ 200 MB).
 
 ## 3. Deploy the site
 
-The *Deploy site* workflow downloads the archive of **the release that triggered it** (the latest one when started by hand or by a code push), builds the site (`web/`) and publishes.
+The site lives in another repository, [`OpenFootballBase`](https://github.com/florentfougeres/OpenFootballBase) (folder `web/`). Its *Deploy site* workflow downloads the archive of the release **of this repository** whose tag it is given (the latest one when started without a tag), builds the site and publishes it.
 
-- **Triggered by the release**: the GitHub `github-pages` environment must allow `data-*` tags (otherwise the
-  deployment fails: "Tag "data-X.Y.Z" is not allowed to deploy to github-pages"). **The rule is in place on this repository**
-  (added on 2026-11-12): publishing a `data-X.Y.Z` release therefore deploys the site by itself. To recreate it on another
-  repository: *Settings → Environments → github-pages → Deployment branches and tags → Add deployment branch or tag rule →
-  type "Tag", pattern `data-*`*.
-- **One deployment at a time**: the workflow cancels the running deployment when another starts. A code *push* made
-  just before the release can therefore cancel one; if the site is not up to date after a few minutes
-  (`gh run list --workflow deploy.yml`), rerun by hand from `main`:
+Publishing a release here starts it by itself: `.github/workflows/notify-site.yml` runs `gh workflow run deploy.yml --repo florentfougeres/OpenFootballBase --ref main -f tag=<tag>` with the secret `SITE_DEPLOY_TOKEN`. A draft release (`PUBLISH=draft`) deploys nothing until you publish it (`gh release edit data-X.Y.Z --draft=false`).
+
+**The token** (fine-grained personal access token, created by the owner):
+
+- repository access: *Only select repositories* → `OpenFootballBase` (the site), nothing else;
+- permission: *Actions → Read and write* (and *Metadata → Read-only*, added automatically);
+- expiration: one year at most. **When it expires, the site silently stops redeploying** (the *Notify site* run fails): renew it before, and note the date here: `____-__-__`;
+- store it: `gh secret set SITE_DEPLOY_TOKEN --repo florentfougeres/OpenFootballBase-Data` (the value is typed at the prompt, never written in a file or a chat).
+
+If the site is not up to date a few minutes after a release (`gh run list --repo florentfougeres/OpenFootballBase --workflow deploy.yml`), start it by hand:
 
 ```bash
-gh workflow run deploy.yml --ref main
-gh run watch                                # follows the run (≈ 1 to 2 minutes)
+gh workflow run deploy.yml --repo florentfougeres/OpenFootballBase --ref main -f tag=data-X.Y.Z
+gh run watch --repo florentfougeres/OpenFootballBase       # follows the run (≈ 1 to 2 minutes)
 ```
-
-It also triggers by itself on every *push* of `web/**` to `main`.
 
 ## 4. Verify
 

@@ -44,6 +44,7 @@ if [ "${PUBLISH:-release}" != none ]; then
     "$NEXT" "$(date +%F)" "$NEXT" "$(date +%F)" > dist/notes.md
   if [ "${PUBLISH:-release}" = draft ]; then DRAFT=--draft; else DRAFT=; fi
   gh release create "data-$NEXT" dist/openfootballbase-data.tar.gz $DRAFT --target main --title "Data $NEXT" --notes-file dist/notes.md
-  if [ -z "$DRAFT" ]; then sleep 60; gh workflow run deploy.yml --ref main; fi   # le déploiement déclenché par la release n'aboutit pas toujours : on relance
+  # Le site se redéploie tout seul : la release publiée lance .github/workflows/notify-site.yml, qui lance le déploiement du dépôt OpenFootballBase (jeton SITE_DEPLOY_TOKEN).
+  # Un brouillon (PUBLISH=draft) ne lance rien : le site se redéploie quand on le publie.
 fi
 echo "##### fin $(date +%FT%T)"

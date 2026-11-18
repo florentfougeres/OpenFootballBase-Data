@@ -4,7 +4,7 @@
 
 ## Signaler une vulnérabilité
 
-Ouvrez une [alerte de sécurité privée](https://github.com/florentfougeres/OpenFootballBase/security/advisories/new) sur GitHub (ou une issue si rien de sensible n'est en jeu). N'y mettez pas de données personnelles. Nous visons une réponse sous une semaine.
+Ouvrez une [alerte de sécurité privée](https://github.com/florentfougeres/OpenFootballBase-Data/security/advisories/new) sur GitHub (ou une issue si rien de sensible n'est en jeu). N'y mettez pas de données personnelles. Nous visons une réponse sous une semaine.
 
 ## Ce que le projet traite, et ne traite pas
 

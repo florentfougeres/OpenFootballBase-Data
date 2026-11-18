@@ -9,13 +9,13 @@
 
 <p align="center">
   <a href="https://florentfougeres.github.io/OpenFootballBase/">Website</a> ·
-  <a href="https://github.com/florentfougeres/OpenFootballBase/releases/latest">Download the data</a> ·
+  <a href="https://github.com/florentfougeres/OpenFootballBase-Data/releases/latest">Download the data</a> ·
   <a href="docs/README.md">Documentation</a> ·
   <a href="README.fr.md">Français</a>
 </p>
 
 <p align="center">
-  <a href="https://github.com/florentfougeres/OpenFootballBase/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/florentfougeres/OpenFootballBase/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="https://github.com/florentfougeres/OpenFootballBase-Data/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/florentfougeres/OpenFootballBase-Data/actions/workflows/ci.yml/badge.svg"></a>
   <a href="LICENSE"><img alt="Code: MIT" src="https://img.shields.io/badge/code-MIT-blue.svg"></a>
   <img alt="Data: CC BY-SA 4.0" src="https://img.shields.io/badge/data-CC%20BY--SA%204.0-lightgrey.svg">
   <img alt="Python 3.11+" src="https://img.shields.io/badge/python-3.11%2B-3776ab.svg">
@@ -28,7 +28,7 @@
 - **Squads, season by season, 2000/01 → 2026/27** (the 5 major leagues from 2000/01, the others from 2010/11), with shirt number, position, nationality and age, for 18 top-flight and second-tier leagues and the UEFA club competitions.
 - **Player pages**: career timeline, clubs, loans, national-team appearances, birth date and place, and — for about 27,000 players — **career statistics** by club, season, competition and national team.
 - **Honours**: the winner of each season of 119 competitions (leagues, national cups and continental cups, from their first seasons), club honours, player titles with the listed squad, and the **Ballon d'Or** rankings since 2000.
-- **Open, reusable data**: Parquet files published with every [release](https://github.com/florentfougeres/OpenFootballBase/releases), queryable with DuckDB, pandas, Polars or any Parquet reader.
+- **Open, reusable data**: Parquet files published with every [release](https://github.com/florentfougeres/OpenFootballBase-Data/releases), queryable with DuckDB, pandas, Polars or any Parquet reader.
 - **Traceable**: every squad cites the Wikipedia page and revision it came from. Nothing is invented; a missing squad stays missing and is shown as such.
 - **A bilingual static website** (English / French) that queries the Parquet files directly in the browser with DuckDB-WASM — no server, no analytics, no cookies.
 - **A reproducible Python pipeline** that rebuilds everything from Wikipedia and Wikidata.
@@ -93,7 +93,7 @@ A squad is **the union of the snapshots published on the Wikipedia pages** of a 
 Every release ships one archive, `openfootballbase-data.tar.gz`, containing Parquet files, a `manifest.json` (with a SHA-256 for each file) and `SCHEMA.md`, the data dictionary.
 
 ```bash
-gh release download --repo florentfougeres/OpenFootballBase --pattern "*-data.tar.gz"
+gh release download --repo florentfougeres/OpenFootballBase-Data --pattern "*-data.tar.gz"
 mkdir data && tar -xzf openfootballbase-data.tar.gz -C data
 ```
 
@@ -116,7 +116,7 @@ To rebuild the full working DuckDB database from a release instead of running th
 Requirements: **Python ≥ 3.11**, **Node.js ≥ 22** (website), **git**, and the `gh` CLI to publish.
 
 ```bash
-git clone https://github.com/florentfougeres/OpenFootballBase.git && cd OpenFootballBase
+git clone https://github.com/florentfougeres/OpenFootballBase-Data.git && cd OpenFootballBase-Data
 python3 -m venv .venv && .venv/bin/pip install -e ".[dev]"
 source .venv/bin/activate                       # exposes the `openfootball` command
 export OPENFOOTBALL_CONTACT="https://github.com/you/your-fork"   # added to the User-Agent sent to Wikipedia/Wikidata (required)

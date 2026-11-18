@@ -10,7 +10,7 @@ Open the site: <https://florentfougeres.github.io/OpenFootballBase/>. Search a c
 
 ## I want to use the data
 
-1. Download the latest release (`gh release download --repo florentfougeres/OpenFootballBase --pattern "*-data.tar.gz"`, or from the [releases page](https://github.com/florentfougeres/OpenFootballBase/releases/latest)).
+1. Download the latest release (`gh release download --repo florentfougeres/OpenFootballBase-Data --pattern "*-data.tar.gz"`, or from the [releases page](https://github.com/florentfougeres/OpenFootballBase-Data/releases/latest)).
 2. Extract it, then read `SCHEMA.md` (the data dictionary) and `manifest.json` (the entry point, with a SHA-256 for every file).
 3. Query the Parquet files with DuckDB, pandas, Polars… ([data-model.md](data-model.md) has the tables, columns and keys, and an example query).
 4. Attribution: Wikipedia text is CC BY-SA 4.0 (each squad row carries its source page and revision), Wikidata is CC0 ([faq.md](faq.md#licences)).
@@ -20,7 +20,7 @@ To get a ready-to-use DuckDB database instead of raw Parquet: `openfootball rest
 ## I want to run or extend the pipeline
 
 ```bash
-git clone https://github.com/florentfougeres/OpenFootballBase.git && cd OpenFootballBase
+git clone https://github.com/florentfougeres/OpenFootballBase-Data.git && cd OpenFootballBase-Data
 python3 -m venv .venv && .venv/bin/pip install -e ".[dev]"
 source .venv/bin/activate
 export OPENFOOTBALL_CONTACT="https://github.com/you/your-fork"   # required: sent in the User-Agent to Wikipedia/Wikidata
