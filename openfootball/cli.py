@@ -23,9 +23,9 @@ from openfootball.careers import import_profiles, import_careers, import_careers
 from openfootball.schema_doc import build_schema_doc
 from openfootball.awards import import_ballon_dor
 from openfootball.nationals import import_national_titles
-from openfootball.honours import drop_vacant, ensure_cups, fill_winners_from_wikipedia, import_winners, resolve_competition_qids
+from openfootball.honours import drop_vacant, ensure_cups, fill_winners_from_wikipedia, import_winners, relink_winner_clubs, resolve_competition_qids
 from openfootball.reconstruct import reconstruct, reconstruct_from_careers
-from openfootball.stats import COUNTRIES, StatsClient, clean_implausible_goals, import_stats, select_active_players, select_all_players, select_players, select_without_stats
+from openfootball.stats import COUNTRIES, StatsClient, clean_implausible_apps, clean_implausible_goals, import_stats, select_active_players, select_all_players, select_players, select_without_stats
 from openfootball.transfers import mark_moves_from_careers, apply_transfers, drop_stale_current_rows, drop_summer_departures
 from openfootball.reconcile import (apply_player_aliases, normalize_player_names, reconcile_by_infobox, reconcile_by_name,
                                     reconcile_by_wikidata, reconcile_players, split_implausible_stays)
@@ -470,6 +470,9 @@ def reconcile_cmd(args: argparse.Namespace) -> int:
         print(f"{split.merged} lignes d'effectif détachées d'un homonyme impossible (âge ou carrière incompatibles), rendues à un joueur sans lien")
         for b in split.blocked:
             print("  refusé :", b)
+    relinked = relink_winner_clubs(con)
+    if relinked:
+        print(f"{relinked} vainqueur(s) rattaché(s) au club qui a des effectifs plutôt qu'au club omnisports")
     before = con.execute("SELECT count(*) FROM player").fetchone()[0]
     r = reconcile_players(con, clients)
     after = con.execute("SELECT count(*) FROM player").fetchone()[0]
@@ -496,7 +499,7 @@ def reconcile_cmd(args: argparse.Namespace) -> int:
                                "srnamespace": 0, "srlimit": 5})
             return [h["title"] for h in data.get("query", {}).get("search", [])]
 
-        i = reconcile_by_infobox(con, lead.get_pages, search, lambda ts: club_qids(lead, ts))
+        i = reconcile_by_infobox(con, lead.get_pages, search, lambda ts: club_qids(lead, ts), since=args.infobox_since, direct_only=args.infobox_direct_only)
         print(f"sans lien -> page anglaise trouvée par l'infobox : {i.resolved} identifiés, {i.merged} fusionnés, "
               f"{i.unresolved} laissés sans lien (aucune page dont la carrière contienne tous leurs clubs)")
         for b in i.blocked:
@@ -612,6 +615,9 @@ def stats_cmd(args: argparse.Namespace) -> int:
     cleaned = clean_implausible_goals(con)
     if cleaned:
         print(f"  {cleaned} nombre(s) de buts impossible(s) vidé(s)")
+    cleaned = clean_implausible_apps(con)
+    if cleaned:
+        print(f"  {cleaned} nombre(s) de matches impossible(s) vidé(s) (année lue comme un nombre de matches, saison trop longue)")
     return 0
 
 
@@ -624,6 +630,9 @@ def honours_cmd(args: argparse.Namespace) -> int:
     import_winners(con, WikidataClient(args.wd_cache))
     fill_winners_from_wikipedia(con, WikipediaClient(args.cache))
     drop_vacant(con)
+    relinked = relink_winner_clubs(con)
+    if relinked:
+        print(f"  {relinked} vainqueur(s) rattaché(s) au club qui a des effectifs plutôt qu'au club omnisports")
     return 0
 
 
@@ -837,6 +846,10 @@ def main(argv: list[str] | None = None) -> int:
     rc.add_argument("--wikidata", action="store_true",
                     help="identifie les joueurs sans QID par Wikidata : footballeur de même nom dont les clubs (P54) contiennent les nôtres")
     rc.add_argument("--wd-cache", default="cache/wikidata")
+    rc.add_argument("--infobox-since", type=int, default=None, metavar="ANNEE",
+                    help="avec --infobox : seulement les joueurs d'un effectif depuis cette saison (début de saison, ex. 2020)")
+    rc.add_argument("--infobox-direct-only", action="store_true",
+                    help="avec --infobox : seulement le nom comme titre de page (rapide, lecture groupée) ; sans la recherche, une requête par joueur")
     rc.add_argument("--infobox", action="store_true",
                     help="cherche la page anglaise des joueurs sans lien et la valide par son infobox (carrière = nos clubs)")
     rc.set_defaults(func=reconcile_cmd)

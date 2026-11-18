@@ -355,3 +355,19 @@ def test_sort_key_glued_to_a_name_is_repaired():
         c.execute("INSERT INTO player (id, name) VALUES (?, ?)", [pid, name])
     assert normalize_player_names(c) == 2
     assert [r[0] for r in c.execute("SELECT name FROM player ORDER BY id").fetchall()] == ["Clément Akpa", "Mohamed Ben Fredj", "Dupont, Jean", "Jean Dupont"]
+
+
+def test_youth_years_before_the_proven_stay_at_the_same_club_are_accepted():
+    from openfootball.reconcile import _stays_proven
+    spells = [("Torino FC", "Torino", 2019, 2020), ("US Alessandria Calcio 1912", "Alessandria", 2019, 2020)]
+    # Torino listé dès 2017/18 (équipe de jeunes), carrière au Torino dès 2019 : accepté
+    assert _stays_proven(spells, [("Torino FC", 2019, None), ("Torino FC", 2018, None), ("Torino FC", 2017, None)], None)
+    # trop ancien (plus de 3 saisons avant le séjour prouvé) : refusé
+    assert not _stays_proven(spells, [("Torino FC", 2019, None), ("Torino FC", 2014, None)], None)
+    # un autre club non couvert : refusé, l'exception ne vaut que pour le MÊME club
+    assert not _stays_proven(spells, [("Torino FC", 2019, None), ("Juventus FC", 2018, None)], None)
+    # aucun séjour couvert : refusé (un homonyme d'un autre club ne passe jamais)
+    assert not _stays_proven(spells, [("Sporting CP", 2024, None)], None)
+    assert not _stays_proven(spells, [], None)
+    # un séjour POSTÉRIEUR non couvert n'est jamais excusé
+    assert not _stays_proven(spells, [("Torino FC", 2019, None), ("Torino FC", 2023, None)], None)

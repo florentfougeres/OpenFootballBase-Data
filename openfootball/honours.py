@@ -108,6 +108,23 @@ def _club_for(con, qid: str, name: str, country: str | None) -> int | None:
     return row[0] if row else None
 
 
+def relink_winner_clubs(con: duckdb.DuckDBPyConnection) -> int:
+    """Un vainqueur dont le club n'a aucun effectif (le club omnisports « Galatasaray S.K. ») est rattaché à son club « frère » qui en a
+    (« Galatasaray S.K. (football) » : page du même titre suivie de « (football) », ou même nom dans le même pays). Rend le nombre de lignes corrigées."""
+    fixed = 0
+    for cid, year, qid, club, country in con.execute("""SELECT w.competition_id, w.season_start, w.winner_qid, w.club_id, co.country_code
+            FROM competition_winner w JOIN competition co ON co.id = w.competition_id
+            WHERE w.club_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM club_season cs WHERE cs.club_id = w.club_id)""").fetchall():
+        sib = con.execute("""SELECT sib.id FROM club cur JOIN club sib ON sib.id <> cur.id
+                                 AND (sib.wikipedia_title = cur.wikipedia_title || ' (football)' OR (sib.name_en = cur.name_en AND sib.country_code = ?))
+                             WHERE cur.id = ? AND EXISTS (SELECT 1 FROM club_season cs WHERE cs.club_id = sib.id)
+                             ORDER BY (SELECT count(*) FROM club_season cs WHERE cs.club_id = sib.id) DESC, sib.id LIMIT 1""", [country, club]).fetchone()
+        if sib:
+            con.execute("UPDATE competition_winner SET club_id = ? WHERE competition_id = ? AND season_start = ? AND winner_qid = ?", [sib[0], cid, year, qid])
+            fixed += 1
+    return fixed
+
+
 def import_winners(con: duckdb.DuckDBPyConnection, wd, *, log: Callable[[str], None] = print) -> int:
     """Remplace le palmarès par celui de Wikidata. Rend le nombre de lignes (compétition, saison, vainqueur) écrites."""
     comps = con.execute("""SELECT c.id, w.qid, c.country_code FROM competition c JOIN competition_wikidata w ON w.competition_id = c.id ORDER BY c.id""").fetchall()
@@ -246,8 +263,8 @@ def fill_winners_from_wikipedia(con: duckdb.DuckDBPyConnection, wp, *, since: in
     try:
         for (cid, y), (target, label, page) in sorted(found.items()):
             qid = qids.get(target)
-            club = con.execute("SELECT id FROM club WHERE wikidata_qid = ? OR wikipedia_title = ?", [qid, target]).fetchone() if (qid or target) else None
-            club_id = club[0] if club else None
+            country = con.execute("SELECT country_code FROM competition WHERE id = ?", [cid]).fetchone()[0]
+            club_id = _club_for(con, qid, target, country) if (qid or target) else None        # le club qui a des effectifs (« Galatasaray S.K. (football) »), pas le club omnisports
             old = con.execute("SELECT club_id, winner_qid FROM competition_winner WHERE competition_id = ? AND season_start = ?", [cid, y]).fetchall()
             if len(old) == 1 and ((club_id is not None and old[0][0] == club_id) or old[0][1] == qid):
                 continue                                              # Wikidata et la page disent la même chose

@@ -158,6 +158,26 @@ def _supported(spells: list[tuple], club_title: str, season_year: int, club_qid:
     return False
 
 
+YOUTH_YEARS = 3      # saisons avant un séjour prouvé pendant lesquelles un joueur peut être listé (équipe de jeunes) sans figurer dans la carrière « senior »
+
+
+def _stays_proven(spells: list[tuple], stays: list[tuple], link_qid: dict[str, str] | None) -> bool:
+    """La carrière (infobox) prouve les séjours du joueur de notre base : (club, saison de début, QID du club).
+    Chaque séjour doit être couvert ; seule exception, un séjour NON couvert qui précède d'au plus `YOUTH_YEARS` saisons un séjour couvert DANS LE MÊME CLUB
+    (un jeune listé dans l'effectif avant ses débuts « senior » : Torino 2017 et 2018, carrière au Torino dès 2019). Au moins un séjour doit être couvert."""
+    if not stays:
+        return False
+    covered = [(c, y) for c, y, q in stays if _supported(spells, c, y, q, link_qid)]
+    if not covered:
+        return False
+    for c, y, q in stays:
+        if (c, y) in covered:
+            continue
+        if not any(cc == c and 0 < yy - y <= YOUTH_YEARS for cc, yy in covered):
+            return False
+    return True
+
+
 def reconcile_by_name(con: duckdb.DuckDBPyConnection) -> ReconcileReport:
     """Rattache un joueur sans lien à un joueur identifié (QID) de même nom, SEULEMENT si la carrière de
     celui-ci contient chacun des club-saisons du joueur sans lien et qu'un seul candidat y répond.
@@ -182,7 +202,7 @@ def reconcile_by_name(con: duckdb.DuckDBPyConnection) -> ReconcileReport:
         stays = con.execute("""SELECT cl.wikipedia_title, s.start_year, cl.wikidata_qid FROM player_club_season pcs
             JOIN club_season cs ON cs.id = pcs.club_season_id JOIN club cl ON cl.id = cs.club_id
             JOIN season s ON s.id = cs.season_id WHERE pcs.player_id = ?""", [pid]).fetchall()
-        proven = [c for c in cands if stays and all(_supported(careers[c], t, y, q, link_qid) for t, y, q in stays)]
+        proven = [c for c in cands if _stays_proven(careers[c], stays, link_qid)]
         if len(proven) != 1:
             report.unresolved += 1
             continue
@@ -336,7 +356,7 @@ def _name_matches(player_name: str, title: str) -> bool:
 
 
 def reconcile_by_infobox(con: duckdb.DuckDBPyConnection, pages, search, qids, *, batch: int = 50,
-                         log=print) -> ReconcileReport:
+                         since: int | None = None, direct_only: bool = False, log=print) -> ReconcileReport:
     """Retrouve la page anglaise des joueurs sans lien (pages fr/it/es sans liens) en lisant leur infobox.
 
     `pages(titles) -> [Page]` lit l'introduction (cache) ; `search(name) -> [titres]` interroge la recherche
@@ -350,6 +370,10 @@ def reconcile_by_infobox(con: duckdb.DuckDBPyConnection, pages, search, qids, *,
         "SELECT p.id, p.name FROM player p LEFT JOIN player_wikidata w ON w.player_id = p.id "
         "WHERE w.player_id IS NULL AND (p.link_title IS NULL) ORDER BY p.id").fetchall()
         if not re.search(r"[{}\[\]|<>#]", name)]                  # un nom qui contient du code wiki n'est pas un titre de page
+    if since is not None:                                           # seulement les joueurs d'un effectif depuis cette saison (les plus utiles, et la recherche est lente)
+        recent = {r[0] for r in con.execute("""SELECT DISTINCT pcs.player_id FROM player_club_season pcs JOIN club_season cs ON cs.id = pcs.club_season_id
+                                               JOIN season s ON s.id = cs.season_id WHERE pcs.stint <> 'loan_out' AND s.start_year >= ?""", [since]).fetchall()}
+        loose = [(pid, name) for pid, name in loose if pid in recent]
     link_qid = _club_qids_by_link(con)
     stays: dict[int, list[tuple]] = defaultdict(list)
     for pid, club, year, club_qid in con.execute("""SELECT pcs.player_id, cl.wikipedia_title, s.start_year, cl.wikidata_qid FROM player_club_season pcs
@@ -364,7 +388,7 @@ def reconcile_by_infobox(con: duckdb.DuckDBPyConnection, pages, search, qids, *,
             if not page.exists:
                 continue
             spells = [(s.club_link, s.club_name, s.start_year, s.end_year) for s in parse_career(page.wikitext or "")]
-            if spells and stays[pid] and all(_supported(spells, c, y, q, link_qid) for c, y, q in stays[pid]):
+            if spells and _stays_proven(spells, stays[pid], link_qid):
                 out.append(page.resolved_title or page.title)
         return list(dict.fromkeys(out))
 
@@ -414,6 +438,9 @@ def reconcile_by_infobox(con: duckdb.DuckDBPyConnection, pages, search, qids, *,
         flush()
         log(f"  {min(i + batch, len(loose))}/{len(loose)} joueurs (titre direct) : {report.resolved + report.merged} identifiés")
     GROUP = 25
+    if direct_only:                                            # sans la recherche (une requête par joueur, la partie lente)
+        report.unresolved += len(remaining)
+        remaining = []
     for g in range(0, len(remaining), GROUP):                  # 2) recherche, pour ceux dont le titre est qualifié
         group = remaining[g:g + GROUP]
         found_titles = {pid: [t for t in dict.fromkeys(search(name)) if _name_matches(name, t)] for pid, name in group}

@@ -76,6 +76,17 @@ def clean_implausible_goals(con: duckdb.DuckDBPyConnection) -> int:
                             AND goals > {MAX_GOALS_PER_APP} * apps RETURNING 1""").fetchall())
 
 
+MAX_LEAGUE_APPS = 80      # plus de matches de championnat dans une saison d'une seule année : lecture erronée (même seuil que l'audit)
+
+
+def clean_implausible_apps(con: duckdb.DuckDBPyConnection) -> int:
+    """Vide les nombres de matches impossibles : l'année de la saison lue comme un nombre de matches (« 2010 matches »), ou plus de matches de championnat
+    qu'une saison n'en compte. Les lignes sur plusieurs années (« 1998–04 ») gardent leur total. Rend le nombre de lignes corrigées."""
+    return len(con.execute(f"""UPDATE player_stat_club SET apps = NULL WHERE apps IS NOT NULL AND (apps BETWEEN 1900 AND 2100
+        OR (competition_group = 'League' AND apps > {MAX_LEAGUE_APPS}
+            AND NOT (season LIKE '%–%' AND (try_cast(right(season, 2) AS INTEGER) - try_cast(substr(season, 3, 2) AS INTEGER) + 100) % 100 > 1))) RETURNING 1""").fetchall())
+
+
 def import_stats(con: duckdb.DuckDBPyConnection, client: WikipediaClient, players: list[tuple[int, str]], *,
                  log: Callable[[str], None] = print) -> tuple[int, int, int]:
     """Lit et écrit les statistiques de `players`. Idempotent (remplace les lignes du joueur).
