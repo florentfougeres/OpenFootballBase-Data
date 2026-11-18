@@ -24,7 +24,7 @@ import requests
 
 from openfootball.db import connect, migrate
 
-REPO = "florentfougeres/OpenFootballBase"
+REPO = "florentfougeres/OpenFootballBase-Data"
 
 
 def download_release(tag: str, dest: Path, *, repo: str = REPO, log: Callable[[str], None] = print) -> Path:
