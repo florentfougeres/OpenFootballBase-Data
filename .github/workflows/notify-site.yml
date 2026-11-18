@@ -3,7 +3,7 @@ name: Notify site
 # Le site (dépôt OpenFootballBase) est reconstruit à partir de la dernière release de CE dépôt.
 # Une release d'un dépôt ne lance pas de workflow d'un autre : on le lance ici avec un jeton à portée minimale
 # (SITE_DEPLOY_TOKEN : jeton « fine-grained », dépôt OpenFootballBase seul, permission Actions en lecture et écriture).
-# Expiration : un an au plus. Passé ce délai le site ne se redéploie plus sans bruit : voir docs/*/publishing-a-release.md.
+# Sans expiration (choix du propriétaire) : à révoquer et recréer en cas de fuite, voir docs/*/publishing-a-release.md. Avec une expiration, passé ce délai ce workflow échoue.
 on:
   release:
     types: [published]

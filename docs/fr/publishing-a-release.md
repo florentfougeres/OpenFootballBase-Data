@@ -97,7 +97,7 @@ Publier une release ici le lance tout seul : `.github/workflows/notify-site.yml`
 
 - accès aux dépôts : *Only select repositories* → `OpenFootballBase` (le site), rien d'autre ;
 - permission : *Actions → Read and write* (et *Metadata → Read-only*, ajoutée automatiquement) ;
-- expiration : un an au plus. **À l'expiration, le site cesse de se redéployer sans bruit** (l'exécution *Notify site* échoue) : renouvelez avant, et notez la date ici : `____-__-__` ;
+- expiration : **aucune** (choix du propriétaire). Sans expiration, le site ne cesse jamais de se redéployer tout seul ; en contrepartie, **révoquez-le et créez-en un nouveau s'il a pu fuiter** (GitHub → Settings → Developer settings → Personal access tokens), puis rangez le nouveau avec la commande ci-dessous. Si vous lui donnez un jour une expiration, notez la date ici : passé ce délai l'exécution *Notify site* échoue et le site cesse de se redéployer sans bruit ;
 - le ranger : `gh secret set SITE_DEPLOY_TOKEN --repo florentfougeres/OpenFootballBase-Data` (la valeur se tape à l'invite, jamais dans un fichier ni dans un chat).
 
 Si le site n'est pas à jour quelques minutes après une release (`gh run list --repo florentfougeres/OpenFootballBase --workflow deploy.yml`), lancez-le à la main :

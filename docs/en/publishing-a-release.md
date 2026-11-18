@@ -97,7 +97,7 @@ Publishing a release here starts it by itself: `.github/workflows/notify-site.ym
 
 - repository access: *Only select repositories* → `OpenFootballBase` (the site), nothing else;
 - permission: *Actions → Read and write* (and *Metadata → Read-only*, added automatically);
-- expiration: one year at most. **When it expires, the site silently stops redeploying** (the *Notify site* run fails): renew it before, and note the date here: `____-__-__`;
+- expiration: **none** (chosen by the owner). Since the token has no expiry the site never stops redeploying by itself; in exchange, **revoke it and create a new one if it may have leaked** (GitHub → Settings → Developer settings → Personal access tokens), and store the new one with the command below. If you ever give it an expiry, note the date here: when it passes, the *Notify site* run fails and the site silently stops redeploying;
 - store it: `gh secret set SITE_DEPLOY_TOKEN --repo florentfougeres/OpenFootballBase-Data` (the value is typed at the prompt, never written in a file or a chat).
 
 If the site is not up to date a few minutes after a release (`gh run list --repo florentfougeres/OpenFootballBase --workflow deploy.yml`), start it by hand:
