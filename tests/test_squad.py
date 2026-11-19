@@ -397,3 +397,9 @@ def test_html_neerlandais_ignore_partis_arrives_et_jeunes():
     html = ("<h2>Eerste Elftal</h2>" + table + "<h2>Vertrokken</h2>" + table.replace("X Y", "Parti Un")
             + "<h2>Aangetrokken</h2>" + table.replace("X Y", "Arrive Deux") + "<h2>A-Jeugd</h2>" + table.replace("X Y", "Jeune Trois"))
     assert [e.name for e in parse_squad_html(html, "nl")] == ["X Y"]
+
+
+def test_infobox_count_out_of_range_is_ignored():
+    from openfootball.parse.infobox import _int
+    assert _int("100000000000001") is None and _int("5001") is None
+    assert _int("632") == 632 and _int("[[Liste|67]]") == 67

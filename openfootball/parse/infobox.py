@@ -51,7 +51,11 @@ def parse_years(raw: str | None) -> tuple[int | None, int | None]:
 def _int(raw: str | None) -> int | None:
     text = re.sub(r"\[\[(?:[^|\]]*\|)?([^\]]*)\]\]", r"\1", raw or "")          # [[Liste des buts|67]] -> 67
     m = re.match(r"\s*(\d+)\s*(?:\(\s*\d+\s*\))?\s*$", re.sub(r"<[^>]+>|\{\{.*?\}\}", "", text))
-    return int(m.group(1)) if m else None
+    n = int(m.group(1)) if m else None
+    return n if n is not None and n <= MAX_COUNT else None          # une valeur absurde (ex. 100000000000001) est une faute de saisie
+
+
+MAX_COUNT = 5000          # aucun joueur n'a autant de matches ni de buts avec un club ou une sélection
 
 
 def _club(raw: str) -> tuple[str, str | None]:
