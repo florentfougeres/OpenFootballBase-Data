@@ -53,6 +53,69 @@ def _merge(con, keep: int, dup: int) -> None:
     con.execute("DELETE FROM player WHERE id = ?", [dup])
 
 
+def purge_misplaced_squads(con: duckdb.DuckDBPyConnection, *, log=print) -> dict[str, int]:
+    """Retire de la base deux sortes de fausses lignes d'effectif, jamais dans une saison figée :
+    1. celles dont la section est un tableau de records (« Most appearances », « Retired numbers », « Player records ») : des légendes nées en 1954 dans l'effectif 2026/27 ;
+    2. celles d'une saison PASSÉE dont la source est la page du CLUB et non une page de saison : son tableau « First-team squad » est l'effectif ACTUEL
+       (Cerezo Osaka 2011/12 portait des joueurs nés en 2001). Le club-saison reste, enregistré comme trou connu.
+    Chaque club-saison touché est tracé dans `amendment_log`. Rend le nombre de lignes retirées par sorte."""
+    from openfootball.parse.squad import is_excluded_section
+    done = {"records": 0, "page_du_club": 0}
+
+    def drop(cs_id: int, season_id: int, where: str, params: list, why: str) -> int:
+        ids = [r[0] for r in con.execute(f"SELECT player_id FROM player_club_season WHERE club_season_id = ? AND {where}", [cs_id, *params]).fetchall()]
+        if not ids:
+            return 0
+        marks = ",".join("?" * len(ids))
+        con.execute(f"DELETE FROM squad_row_source WHERE club_season_id = ? AND player_id IN ({marks})", [cs_id, *ids])
+        con.execute(f"DELETE FROM player_club_season WHERE club_season_id = ? AND player_id IN ({marks})", [cs_id, *ids])
+        con.execute("INSERT INTO amendment_log (id, season_id, club_season_id, description, reason, amended_at) "
+                    "VALUES ((SELECT coalesce(max(id), 0) + 1 FROM amendment_log), ?, ?, ?, ?, now())", [season_id, cs_id, f"{len(ids)} ligne(s) d'effectif retirée(s)", why])
+        return len(ids)
+
+    sections = [r[0] for r in con.execute("""SELECT DISTINCT pcs.source_section FROM player_club_season pcs JOIN club_season cs ON cs.id = pcs.club_season_id
+                                             JOIN season s ON s.id = cs.season_id WHERE s.status <> 'frozen' AND pcs.source_section IS NOT NULL""").fetchall()]
+    bad = [s for s in sections if is_excluded_section(s)]
+    if bad:
+        marks = ",".join("?" * len(bad))
+        for cs_id, season_id, section in con.execute(f"""SELECT DISTINCT pcs.club_season_id, cs.season_id, pcs.source_section FROM player_club_season pcs
+                JOIN club_season cs ON cs.id = pcs.club_season_id JOIN season s ON s.id = cs.season_id
+                WHERE s.status <> 'frozen' AND pcs.source_section IN ({marks})""", bad).fetchall():
+            done["records"] += drop(cs_id, season_id, "source_section = ?", [section], f"section « {section} » : un tableau de records ou de joueurs hors effectif, pas l'effectif")
+    for cs_id, season_id in con.execute("""SELECT cs.id, cs.season_id FROM club_season cs JOIN club cl ON cl.id = cs.club_id JOIN season s ON s.id = cs.season_id
+            WHERE s.status NOT IN ('open', 'frozen') AND cs.source_title = cl.wikipedia_title""").fetchall():
+        n = drop(cs_id, season_id, "TRUE", [], "effectif lu sur la page du club (effectif ACTUEL) et non sur une page de saison")
+        if n:
+            done["page_du_club"] += n
+            con.execute("INSERT INTO known_gap (club_season_id, reason, validated_at) VALUES (?, ?, now()) ON CONFLICT DO NOTHING",
+                        [cs_id, "pas de page de saison : seule la page du club (effectif actuel) existe"])
+    if any(done.values()):
+        log(f"{done['records']} lignes de tableaux de records et {done['page_du_club']} lignes d'effectifs lus sur la page du club (effectif actuel) retirées")
+    return done
+
+
+def remove_non_players(con: duckdb.DuckDBPyConnection) -> int:
+    """Retire les « joueurs » qui n'en sont pas (« 3 May » lu dans un tableau de suspensions, « Loan ») : sans page ni QID, avec un nom qui est une date ou une
+    valeur de tableau. Leurs lignes d'effectif partent avec eux ; chaque retrait est tracé dans `amendment_log`. Une saison figée n'est jamais touchée.
+    Rend le nombre de faux joueurs retirés."""
+    from openfootball.parse.squad import looks_like_non_player
+    removed = 0
+    for pid, name in con.execute("""SELECT p.id, p.name FROM player p LEFT JOIN player_wikidata w ON w.player_id = p.id
+                                    WHERE w.player_id IS NULL AND p.link_title IS NULL""").fetchall():
+        if not looks_like_non_player(name) or _frozen_rows(con, pid):
+            continue
+        for cs, season in con.execute("""SELECT pcs.club_season_id, cs.season_id FROM player_club_season pcs JOIN club_season cs ON cs.id = pcs.club_season_id
+                                         WHERE pcs.player_id = ?""", [pid]).fetchall():
+            con.execute("INSERT INTO amendment_log (id, season_id, club_season_id, description, reason, amended_at) "
+                        "VALUES ((SELECT coalesce(max(id), 0) + 1 FROM amendment_log), ?, ?, ?, ?, now())",
+                        [season, cs, f"« {name} » retiré de l'effectif", "ce n'est pas un nom de joueur (date ou valeur de tableau lue dans l'effectif)"])
+        for table in ("squad_row_source", "squad_movement", "player_club_season"):
+            con.execute(f"DELETE FROM {table} WHERE player_id = ?", [pid])
+        con.execute("DELETE FROM player WHERE id = ?", [pid])
+        removed += 1
+    return removed
+
+
 def normalize_player_names(con: duckdb.DuckDBPyConnection) -> int:
     """« Lloris » (écrit `[[Hugo Lloris|Lloris]]` sur la page de l'équipe) devient « Hugo Lloris » : le nom d'un joueur lié est le titre de sa page
     quand le nom lu n'en est qu'une partie. Rend le nombre de noms modifiés."""
@@ -426,11 +489,27 @@ def reconcile_by_infobox(con: duckdb.DuckDBPyConnection, pages, search, qids, *,
         except Exception as exc:                                # une page illisible ne doit pas arrêter tout le lot
             log(f"  lecture groupée impossible ({exc}); reprise joueur par joueur")
 
+    def disambiguation_candidates(name: str) -> list[str]:
+        """Page d'homonymie (« Abdoulaye Cissé may refer to: … ») : les titres des footballeurs qu'elle liste. Lues en lot avec le titre direct, donc sans requête de plus."""
+        for page in pages([name]):
+            text = page.wikitext or ""
+            if page.exists and re.search(r"may refer to|\{\{\s*(disambig|dab|hndis|given name|surname)", text, re.I):
+                return [m.group(1).strip() for line in text.splitlines() if re.search(r"footbal|soccer", line, re.I)
+                        for m in re.finditer(r"\[\[([^\]|#]+)", line)]
+        return []
+
+    def titles_of(name: str) -> list[str]:
+        """Le nom comme titre, puis ses deux qualifications usuelles : « Nom (footballer) » et « Nom (soccer) » (joueurs américains), lues en lot."""
+        return [name, f"{name} (footballer)", f"{name} (soccer)"]
+
     remaining = []
-    for i in range(0, len(loose), batch):                      # 1) le nom comme titre (redirections comprises)
-        warm([name for _, name in loose[i:i + batch]])
+    for i in range(0, len(loose), batch):                      # 1) le nom comme titre (redirections comprises), puis ses titres qualifiés
+        warm([t for _, name in loose[i:i + batch] for t in titles_of(name)])
         for pid, name in loose[i:i + batch]:
-            found = proven(pid, name, [name])
+            found = proven(pid, name, titles_of(name))
+            if not found:
+                candidates = disambiguation_candidates(name)       # le nom mène à une page d'homonymie : on essaie ses footballeurs
+                found = proven(pid, name, candidates) if candidates else []
             if len(found) == 1:
                 matched.append((pid, found[0]))
             else:

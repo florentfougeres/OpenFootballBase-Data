@@ -47,13 +47,20 @@ _REGION_END = re.compile(
 _EXCLUDED_SECTION = re.compile(
     r"reserve|academy|youth|under-?\d|u-?\d{2}|b team|filial|cantera|juvenil|\bII$|"
     r"coaching staff|^staff\b|managerial|^management|"
-    r"^goals?$|goalscorers?|top scor|assists?|disciplin|contract|award|clean sheet|hat-?trick|player of the",
+    r"^goals?$|goalscorers?|top scor|assists?|disciplin|suspensions?|sanctions?|contract|award|clean sheet|hat-?trick|player of the|"
+    r"most appearances|top \d+|all[- ]time|retired numbers?|records?|hall of fame|legends",             # tableaux de records de la page d'un club : des légendes, pas l'effectif
     re.I)
 
 
 _NO_LETTERS = re.compile(r"^[^A-Za-zÀ-ÿ]*$")
-_DATE = re.compile(r"^\d{1,2}\s+[A-Za-zÀ-ÿ]+\s+\d{4}$")
-_NOT_A_PLAYER = re.compile(r"^\W*(totals?|own goals?|opponents?|o\.?g\.?|n/?a|vacant|\d+\s*px(?:\|.*)?)\W*$", re.I)
+_DATE = re.compile(r"^\d{1,2}(?:st|nd|rd|th|er)?\.?\s+[A-Za-zÀ-ÿ]+(?:\s+\d{4})?$")             # « 3 May », « 14 février 2014 » : une date lue comme un nom (tableau de suspensions)
+_NOT_A_PLAYER = re.compile(r"^\W*(totals?|own goals?|opponents?|o\.?g\.?|n/?a|vacant|loan(?:ed)?|free transfer|end of loan|\d+\s*px(?:\|.*)?)\W*$", re.I)
+
+
+def looks_like_non_player(name: str) -> bool:
+    """Un nom qui n'en est pas un (date, total, « Loan », seulement des chiffres) : mêmes règles que le lecteur, pour nettoyer ce qui est déjà en base."""
+    name = (name or "").strip()
+    return not name or bool(_NOT_A_PLAYER.match(name) or _NO_LETTERS.match(name) or _DATE.match(name))
 _TEMPLATES = ("Fs player", "Efs player", "Football squad player",
               "Extended football squad player", "Fb si player")
 

@@ -38,7 +38,9 @@ Rappel : `export OPENFOOTBALL_CONTACT="votre-contact"` avant toute commande qui 
 | `reconcile` | Un joueur = un QID Wikidata ; fusionne les doublons entre langues. | |
 | `reconcile --names` | Rattache les joueurs **sans lien** à un joueur identifié de même nom, seulement si sa carrière contient les mêmes club-saisons. **À lancer après chaque `backfill`.** | |
 | `reconcile --wikidata` | Pour un joueur sans lien : cherche dans Wikidata un footballeur de même nom dont les clubs (P54) contiennent tous nos club-saisons ; retenu seulement s'il est unique. Rapide (quelques minutes). | |
-| `reconcile --infobox` | Cherche la page anglaise des joueurs sans lien et la valide par son infobox. **Long** (plusieurs centaines de requêtes, de l'ordre de l'heure) et peu rentable en relance : à lancer ponctuellement. | |
+| `reconcile --infobox` | Cherche la page anglaise des joueurs sans lien et la valide par son infobox : le nom comme titre, puis `(footballer)` / `(soccer)`, puis les footballeurs listés sur une page d'homonymie, puis une recherche (une requête par joueur : **lent**). Un séjour non couvert est accepté s'il précède d'au plus 3 saisons un séjour couvert dans le même club (années de jeunes). | |
+| `reconcile --infobox --infobox-direct-only` | Idem sans la recherche : les titres sont lus en lot (environ 15 minutes pour 13 000 joueurs). C'est ce que lance la mise à jour hebdomadaire. | |
+| `reconcile --infobox --infobox-since 2020` | Seulement les joueurs d'un effectif depuis ce début de saison (la recherche est lente, on commence par les plus utiles). | |
 | `careers` | Importe carrière **et sélections** (infobox anglaise) des joueurs qui n'en ont pas encore. | `--refresh` (relit tout, depuis le cache : voir [update-players.md](update-players.md)), `--active` (joueurs non retraités), `--fresh` (ignore le cache), `--limit N` (essai) |
 | `enrich --what players` | Liens Wikipedia par langue et dates de naissance (donc les âges). | |
 | `enrich --what clubs` | Liens Wikipedia et noms français des clubs à effectifs. | |

@@ -28,7 +28,7 @@ if [ -f "$DB" ]; then mv "$DB" "data/work/backups/openfootball_avant_$STAMP.duck
 $OF restore-db --release "$LAST" --db "$DB"
 
 $OF careers --active --fresh                           # infobox de carrière + profil
-$OF reconcile --names --wikidata
+$OF reconcile --names --wikidata --infobox --infobox-direct-only    # + pages Wikipedia retrouvées par le titre (lecture groupée, sans la recherche lente)
 $OF stats --active --fresh --cache cache/wikipedia_stats_v2   # tableaux « Career statistics » des joueurs en activité, relus
 $OF enrich --what players careerclubs labels
 $OF coaches || echo "entraîneurs : échec ignoré (Wikidata indisponible), table de la release précédente conservée"   # mandats d'entraîneurs (Wikidata)

@@ -28,7 +28,7 @@ from openfootball.reconstruct import reconstruct, reconstruct_from_careers
 from openfootball.stats import COUNTRIES, StatsClient, clean_implausible_apps, clean_implausible_goals, import_stats, select_active_players, select_all_players, select_players, select_without_stats
 from openfootball.transfers import mark_moves_from_careers, apply_transfers, drop_stale_current_rows, drop_summer_departures
 from openfootball.reconcile import (apply_player_aliases, normalize_player_names, reconcile_by_infobox, reconcile_by_name,
-                                    reconcile_by_wikidata, reconcile_players, split_implausible_stays)
+                                    reconcile_by_wikidata, reconcile_players, remove_non_players, purge_misplaced_squads, split_implausible_stays)
 from openfootball.export import export_all, pack, verify_continuity
 from openfootball.scopes import load_scopes
 from openfootball.store import FreezeRefused, SeasonFrozen, freeze
@@ -465,6 +465,10 @@ def reconcile_cmd(args: argparse.Namespace) -> int:
     renamed = normalize_player_names(con)
     if renamed:
         print(f"{renamed} noms de joueurs complétés d'après le titre de leur page (« Lloris » -> « Hugo Lloris »)")
+    purge_misplaced_squads(con)
+    fake = remove_non_players(con)
+    if fake:
+        print(f"{fake} faux joueurs retirés (date ou valeur de tableau lue comme un nom)")
     split = split_implausible_stays(con)
     if split.merged or split.blocked:
         print(f"{split.merged} lignes d'effectif détachées d'un homonyme impossible (âge ou carrière incompatibles), rendues à un joueur sans lien")
@@ -504,6 +508,11 @@ def reconcile_cmd(args: argparse.Namespace) -> int:
               f"{i.unresolved} laissés sans lien (aucune page dont la carrière contienne tous leurs clubs)")
         for b in i.blocked:
             print("  refusé :", b)
+    # Les fusions par nom, Wikidata et infobox peuvent rattacher une ligne à un homonyme dont l'âge ou la carrière l'interdit : on détache A LA FIN, une fois
+    # toutes les fusions faites (au début seulement, la recherche suivante les remettait). Le joueur détaché garde une identité faible plutôt qu'une fausse.
+    split = split_implausible_stays(con)
+    if split.merged:
+        print(f"{split.merged} lignes d'effectif détachées d'un homonyme impossible après les fusions")
     return 0
 
 

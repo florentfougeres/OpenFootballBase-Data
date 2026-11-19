@@ -38,7 +38,9 @@ Reminder: `export OPENFOOTBALL_CONTACT="your-contact"` before any command that q
 | `reconcile` | One player = one Wikidata QID; merges duplicates across languages. | |
 | `reconcile --names` | Attaches players **without a link** to an identified player of the same name, only if his career contains the same club-seasons. **Run after every `backfill`.** | |
 | `reconcile --wikidata` | For a player without a link: looks in Wikidata for a footballer of the same name whose clubs (P54) contain all our club-seasons; kept only if unique. Fast (a few minutes). | |
-| `reconcile --infobox` | Looks for the English page of players without a link and validates it with its infobox. **Slow** (several hundred requests, about an hour) and low-yield on reruns: run occasionally. | |
+| `reconcile --infobox` | Looks for the English page of players without a link and validates it with its infobox: the name as a title, then `(footballer)` / `(soccer)`, then the footballers listed on a disambiguation page, then a search (one request per player: **slow**). A stay not covered is accepted if it precedes a covered stay at the same club by at most 3 seasons (youth years). | |
+| `reconcile --infobox --infobox-direct-only` | The same without the search: titles are read in batches (about 15 minutes for 13,000 players). It is what the weekly refresh runs. | |
+| `reconcile --infobox --infobox-since 2020` | Only players in a squad since that season start (the search is slow, start with the most useful). | |
 | `careers` | Imports career **and caps** (English infobox) of players who do not have them yet. | `--refresh` (re-reads everything, from the cache: see [update-players.md](update-players.md)), `--active` (non-retired players), `--fresh` (ignore the cache), `--limit N` (trial) |
 | `enrich --what players` | Wikipedia links per language and birth dates (hence ages). | |
 | `enrich --what clubs` | Wikipedia links and French names of clubs with squads. | |

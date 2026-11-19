@@ -371,3 +371,21 @@ def test_youth_years_before_the_proven_stay_at_the_same_club_are_accepted():
     assert not _stays_proven(spells, [], None)
     # un séjour POSTÉRIEUR non couvert n'est jamais excusé
     assert not _stays_proven(spells, [("Torino FC", 2019, None), ("Torino FC", 2023, None)], None)
+
+
+def test_player_is_found_through_a_disambiguation_page(con):
+    """« Abdoulaye Cissé » mène à une page d'homonymie : on lit ses footballeurs et on garde celui dont la carrière contient nos clubs."""
+    from openfootball.reconcile import reconcile_by_infobox
+    from openfootball.sources.wikipedia import Page
+    con.execute("INSERT INTO player (id, name) VALUES (10, 'Abdoulaye Cisse')")
+    con.execute("INSERT INTO player_club_season (id, player_id, club_season_id, confidence, source) VALUES (10, 10, 2, 'attested', 'wikipedia_season')")   # Toulouse 2024
+    dab = Page(title="Abdoulaye Cisse", exists=True, resolved_title="Abdoulaye Cisse", wikitext=(
+        "'''Abdoulaye Cisse''' may refer to:\n* [[Abdoulaye Cisse (footballer, born 1980)]], Senegalese footballer\n"
+        "* [[Abdoulaye Cisse (footballer, born 2001)]], Ivorian footballer\n* [[Abdoulaye Cisse (politician)]], a politician\n"))
+    pages = {"Abdoulaye Cisse": dab,
+             "Abdoulaye Cisse (footballer, born 1980)": _page("Abdoulaye Cisse (footballer, born 1980)", [("2000–2010", "Everton")]),
+             "Abdoulaye Cisse (footballer, born 2001)": _page("Abdoulaye Cisse (footballer, born 2001)", [("2022–", "Toulouse")])}
+    got = reconcile_by_infobox(con, pages=lambda ts: [pages.get(t) or _page(t, []) for t in ts], search=lambda name: [],
+                               qids=lambda ts: {t: "Q555" for t in ts}, direct_only=True, log=lambda *_: None)
+    assert con.execute("SELECT qid FROM player_wikidata WHERE player_id = 10").fetchone() == ("Q555",)
+    assert got.resolved == 1
