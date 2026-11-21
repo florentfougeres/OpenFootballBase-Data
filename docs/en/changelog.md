@@ -4,6 +4,9 @@
 
 Published data releases, newest first. Names follow [semantic versioning](https://semver.org): **major** = incompatible schema change, **minor** = new data (league, country, cup, table, column), **patch** = data fixes. Each release is `Data X.Y.Z` with tag `data-X.Y.Z` ([how to publish](publishing-a-release.md)). Changes to the site and tooling that are not tied to a data release are listed under "Site and tooling".
 
+## Next data release (unpublished)
+- **Images deleted from Wikimedia**: a player photo (Hamza Abdelkarim) or a club logo whose file is deleted after it was read showed up broken on the site. The weekly run (`enrich --what imagecheck`) checks a quarter of the files per week, removes the vanished images and puts back the current image of the player's page (failing that Wikidata's). The site no longer shows a broken image: the drawn logo or crest takes over.
+
 ## Data 1.24.0 — 2026-11-21
 - **The five first divisions and the Champions League, complete**: Premier League, Liga, Serie A, Bundesliga and Ligue 1 now have **every season from 2010/11 to 2025/26** (the Liga, Serie A and Ligue 1 had 15, 14 and 13: 3,420 more matches, without date or scorers for the seasons the match source does not have, taken from Wikipedia's results matrix), and the Champions League has its 15 editions from 2011/12 to 2025/26 (2020/21 to 2023/24 and 2025/26 added: OpenFootball's `champions-league` repository is read). The number of matches in each season is checked (380, 306, 125, 189…).
 - **A club is no longer taken for another**: from 2013/14 to 2019/20, all of Lazio's matches ("Lazio Roma" in the source) were attached to the club AS Roma (266 matches): "Roma" is part of "Lazio Roma"; a name matched by its words can no longer take a club already recognised by its real name, nor be taken by two teams. The Champions League's Crvena Zvezda (20 matches without a club) is recognised.

@@ -6,6 +6,7 @@ sans logo, un joueur sans date de naissance ou sans page française restent simp
 from __future__ import annotations
 
 import re
+import zlib
 from urllib.parse import unquote
 from datetime import date
 from typing import Callable
@@ -169,11 +170,13 @@ def parse_imageinfo(q: dict, wanted: list[str]) -> dict[str, dict]:
     return out
 
 
-def enrich_player_photos(con: duckdb.DuckDBPyConnection, wp, *, limit: int | None = None, log: Callable[[str], None] = print) -> int:
+def enrich_player_photos(con: duckdb.DuckDBPyConnection, wp, *, limit: int | None = None, only: set[str] | None = None, log: Callable[[str], None] = print) -> int:
     """Adresse (miniature 300 px), page du fichier, licence et auteur des photos d'infobox, pour les profils qui n'ont pas encore
     ces informations. Un fichier introuvable est marqué `image_free = false` (jamais publié) pour ne pas être redemandé."""
     todo = [r[0] for r in con.execute("""SELECT DISTINCT image_file FROM player_profile
         WHERE image_file IS NOT NULL AND image_free IS NULL ORDER BY image_file""").fetchall()]
+    if only is not None:                                 # seulement ces fichiers (une base restaurée n'a plus `image_free` : tout le reste serait relu)
+        todo = [f for f in todo if f in only]
     if limit:
         todo = todo[:limit]
     done = 0
@@ -194,6 +197,91 @@ def enrich_player_photos(con: duckdb.DuckDBPyConnection, wp, *, limit: int | Non
             log(f"  photos : {done}/{len(todo)} fichiers")
     log(f"  photos : {done} fichiers lus")
     return done
+
+
+_THUMB_FILE = re.compile(r"/(?:thumb/)?[0-9a-f]/[0-9a-f]{2}/([^/]+?)(?:/\d+px-[^/]+)?$")
+
+
+def file_of_url(url: str | None) -> str | None:
+    """Nom du fichier Wikimedia d'une adresse (miniature `…/thumb/4/47/Nom.svg/250px-Nom.svg.png`, original ou `Special:FilePath/Nom.jpg?width=300`), sans « File: »."""
+    if not url:
+        return None
+    if "Special:FilePath/" in url:
+        return unquote(url.split("Special:FilePath/", 1)[1].split("?", 1)[0])
+    m = _THUMB_FILE.search(url.split("?", 1)[0])
+    return unquote(m.group(1)) if m else None
+
+
+def missing_files(wp, names: list[str]) -> set[str]:
+    """Les fichiers de `names` (sans « File: ») qui n'existent plus, ni sur Wikipedia ni sur Commons (supprimés depuis la lecture)."""
+    missing: set[str] = set()
+    todo = sorted(set(names))
+    for chunk in _chunks(todo, BATCH):
+        data = wp._call({"action": "query", "titles": "|".join(_file_title(n) for n in chunk), "prop": "imageinfo", "iiprop": "url", "redirects": 1})
+        missing |= set(chunk) - set(parse_imageinfo(data.get("query", {}), chunk))
+    return missing
+
+
+def check_images(con: duckdb.DuckDBPyConnection, wp, wd=None, *, part: tuple[int, int] | None = None, log: Callable[[str], None] = print) -> dict[str, int]:
+    """Retire les images publiées dont le fichier a été supprimé de Wikimedia depuis leur lecture : elles s'afficheraient cassées sur le site.
+    Une photo de joueur est remplacée par l'image actuelle de sa page Wikipedia anglaise (`pageimages`), à défaut par l'image (P18) de son élément Wikidata (`wd`), puis résolue comme les autres ;
+    sinon le joueur n'a plus de photo. Un logo de club supprimé est retiré (le site dessine alors un écusson). Rend {photos, remplacées, logos}.
+    `part` = (k, n) : ne contrôle que les fichiers du k-ième quart (par empreinte du nom), pour borner le temps d'un passage ; en tournant sur la semaine, tout est vu en n passages."""
+    photos = {r[0] for r in con.execute("SELECT DISTINCT image_file FROM player_profile WHERE image_file IS NOT NULL AND image_url IS NOT NULL").fetchall()}
+    logos: dict[str, list[int]] = {}
+    for cid, url in con.execute("SELECT id, logo_url FROM club WHERE logo_url IS NOT NULL").fetchall():
+        if (f := file_of_url(url)):
+            logos.setdefault(f, []).append(cid)
+    files = [f for f in photos | set(logos) if part is None or zlib.crc32(f.encode()) % part[1] == part[0]]
+    gone = missing_files(wp, files)
+    out = {"photos": 0, "remplacées": 0, "logos": 0}
+    for name in gone & set(logos):
+        con.execute("UPDATE club SET logo_url = NULL, logo_license = NULL, logo_commons_url = NULL WHERE id IN (SELECT unnest(?))", [logos[name]])
+        out["logos"] += len(logos[name])
+    lost = sorted(gone & photos)
+    lost_ids = [r[0] for r in con.execute("SELECT player_id FROM player_profile WHERE image_file IN (SELECT unnest(?))", [lost]).fetchall()] if lost else []
+    for name in lost:
+        con.execute("UPDATE player_profile SET image_file = NULL, image_caption = NULL, image_url = NULL, image_page = NULL, image_license = NULL, image_author = NULL, "
+                    "image_free = NULL WHERE image_file = ?", [name])
+    out["photos"] = len(lost)
+    # L'image actuelle de la page du joueur : la plus fréquente raison d'une suppression est un remplacement par une meilleure photo.
+    by_title: dict[str, list[int]] = {}
+    for pid, t in con.execute("""SELECT p.id, p.link_title FROM player p JOIN player_profile pr ON pr.player_id = p.id
+                                 WHERE p.id IN (SELECT unnest(?)) AND p.link_lang = 'en' AND p.link_title IS NOT NULL""", [lost_ids]).fetchall():
+        by_title.setdefault(t, []).append(pid)
+    replaced: set[str] = set()
+    got: set[int] = set()
+    for chunk in _chunks(sorted(by_title), BATCH):
+        data = wp._call({"action": "query", "titles": "|".join(chunk), "prop": "pageimages", "piprop": "name", "redirects": 1})
+        q = data.get("query", {})
+        moved = {m["to"]: m["from"] for key in ("normalized", "redirects") for m in q.get(key, [])}
+        for pg in q.get("pages", []):
+            new, title = pg.get("pageimage"), pg.get("title")
+            if not new or new in gone:
+                continue
+            for t in {title, moved.get(title), moved.get(moved.get(title, ""), "")}:
+                for pid in by_title.get(t, []):
+                    con.execute("UPDATE player_profile SET image_file = ? WHERE player_id = ?", [new, pid])
+                    out["remplacées"] += 1
+                    replaced.add(new)
+                    got.add(pid)
+    if wd is not None:                                   # à défaut, l'image de l'élément Wikidata (souvent déjà remplacée là, avant la page)
+        qid_of = dict(con.execute("SELECT player_id, qid FROM player_wikidata WHERE player_id IN (SELECT unnest(?))", [sorted(set(lost_ids) - got)]).fetchall())
+        pids_of: dict[str, list[int]] = {}
+        for pid, qid in qid_of.items():
+            pids_of.setdefault(qid, []).append(pid)
+        for chunk in _chunks(sorted(pids_of), BATCH):
+            for qid, ent in wd.entities(chunk, props="claims").items():
+                claim = ((ent.get("claims") or {}).get("P18") or [{}])[0]
+                new = ((claim.get("mainsnak") or {}).get("datavalue") or {}).get("value")
+                if new and new not in gone:
+                    for pid in pids_of.get(qid, []):
+                        con.execute("UPDATE player_profile SET image_file = ? WHERE player_id = ?", [new, pid])
+                        out["remplacées"] += 1
+                        replaced.add(new)
+    enrich_player_photos(con, wp, only=replaced, log=log)              # résout l'adresse, la licence et l'auteur des images qui n'ont pas encore ces informations
+    log(f"  images : {out['photos']} photos supprimées de Wikimedia retirées ({out['remplacées']} remplacées par l'image actuelle de la page), {out['logos']} logos de clubs retirés")
+    return out
 
 
 def parse_birth(rows: list[dict]) -> dict[str, tuple[date, int]]:

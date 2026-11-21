@@ -214,3 +214,81 @@ def test_league_logos_are_requested_in_batches_of_at_most_50(monkeypatch):
     monkeypatch.setattr(enrich, "_logos_of_pages", lambda wp, chunk: sizes.append(len(chunk)) or {})
     enrich.enrich_league_logos(con, None, log=lambda m: None)
     assert sizes == [50, 50, 20]
+
+
+class FakeImagesWp:
+    """Imite WikipediaClient._call pour `imageinfo` (fichiers qui existent) et `pageimages` (image actuelle d'une page)."""
+
+    def __init__(self, existing, page_images=None):
+        self.existing, self.page_images, self.calls = set(existing), page_images or {}, []
+
+    def _call(self, params):
+        self.calls.append(params["prop"])
+        titles = params["titles"].split("|")
+        if params["prop"] == "imageinfo":
+            return {"query": {"pages": [{"title": t, **({"imageinfo": [{"url": f"https://x/{t[5:]}", "descriptionurl": f"https://x/page/{t[5:]}"}]}
+                                                       if t[5:] in self.existing else {"missing": ""})} for t in titles]}}
+        return {"query": {"pages": [{"title": t, **({"pageimage": self.page_images[t]} if t in self.page_images else {})} for t in titles]}}
+
+
+def _images_db():
+    from openfootball.db import migrate
+    c = duckdb.connect(":memory:")
+    migrate(c)
+    c.execute("INSERT INTO country VALUES ('EGY', 'Egypt', 'Égypte')")
+    for pid, name, title, f in ((1, "Hamza Abdelkarim", "Hamza Abdelkarim", "Old photo.jpg"), (2, "Other Player", "Other Player", "Fine photo.jpg"),
+                                (3, "Third Player", "Third Player", "Deleted too.jpg")):
+        c.execute("INSERT INTO player (id, name, link_lang, link_title) VALUES (?, ?, 'en', ?)", [pid, name, title])
+        c.execute("INSERT INTO player_profile (player_id, image_file, image_caption, image_url, image_page, image_license, image_author, image_free) "
+                  "VALUES (?, ?, 'cap', ?, ?, 'CC BY', 'someone', true)", [pid, f, f"https://en.wikipedia.org/wiki/Special:FilePath/{f.replace(' ', '%20')}?width=300", "p"])
+    c.execute("INSERT INTO club (id, name_en, country_code, logo_url) VALUES (1, 'Gone FC', 'EGY', 'https://upload.wikimedia.org/wikipedia/en/thumb/4/47/Gone_logo.svg/250px-Gone_logo.svg.png')")
+    c.execute("INSERT INTO club (id, name_en, country_code, logo_url) VALUES (2, 'Fine FC', 'EGY', 'https://upload.wikimedia.org/wikipedia/en/a/ab/Fine_logo.png')")
+    return c
+
+
+def test_file_names_are_read_from_thumbnail_original_and_filepath_urls():
+    from openfootball.enrich import file_of_url
+    assert file_of_url("https://upload.wikimedia.org/wikipedia/en/thumb/4/47/FC_Barcelona_%28crest%29.svg/250px-FC_Barcelona_%28crest%29.svg.png") == "FC_Barcelona_(crest).svg"
+    assert file_of_url("https://upload.wikimedia.org/wikipedia/en/a/ab/Fine_logo.png") == "Fine_logo.png"
+    assert file_of_url("https://en.wikipedia.org/wiki/Special:FilePath/Hamza%20abdelkarim.jpg?width=300") == "Hamza abdelkarim.jpg"
+    assert file_of_url(None) is None
+
+
+def test_images_deleted_from_wikimedia_are_removed_replaced_by_the_pages_current_image_or_dropped():
+    from openfootball.enrich import check_images
+    c = _images_db()
+    wp = FakeImagesWp(existing={"Fine photo.jpg", "Fine logo.png", "New photo.jpg"}, page_images={"Hamza Abdelkarim": "New photo.jpg"})
+    out = check_images(c, wp, log=lambda *_: None)
+    assert out == {"photos": 2, "remplacées": 1, "logos": 1}
+    rows = c.execute("SELECT player_id, image_file, image_url FROM player_profile ORDER BY player_id").fetchall()
+    assert rows[0][1] == "New photo.jpg" and rows[0][2] == "https://x/New photo.jpg"          # remplacée, adresse résolue
+    assert rows[1][1] == "Fine photo.jpg" and rows[1][2] is not None                           # intacte
+    assert rows[2][1] is None and rows[2][2] is None                                           # plus de photo, pas d'image cassée
+    assert c.execute("SELECT id, logo_url IS NULL FROM club ORDER BY id").fetchall() == [(1, True), (2, False)]
+    assert check_images(c, wp, log=lambda *_: None) == {"photos": 0, "remplacées": 0, "logos": 0}   # idempotent
+
+
+def test_a_quarter_of_the_files_is_checked_per_run():
+    from openfootball.enrich import check_images
+    seen = set()
+    for k in range(4):
+        c = _images_db()
+        wp = FakeImagesWp(existing=set())
+        check_images(c, wp, part=(k, 4), log=lambda *_: None)
+        seen |= {r[0] for r in c.execute("SELECT player_id FROM player_profile WHERE image_file IS NULL").fetchall()}
+    assert seen == {1, 2, 3}                                                                  # en quatre passages, tout a été vu
+
+
+def test_a_deleted_photo_falls_back_to_the_wikidata_image_when_the_page_has_none():
+    from openfootball.enrich import check_images
+
+    class FakeWdImages:
+        def entities(self, qids, props, **_):
+            return {q: {"claims": {"P18": [{"mainsnak": {"datavalue": {"value": "Wikidata photo.jpg"}}}]}} for q in qids}
+
+    c = _images_db()
+    c.execute("INSERT INTO player_wikidata VALUES (1, 'Q1'), (3, 'Q3')")
+    wp = FakeImagesWp(existing={"Fine photo.jpg", "Fine logo.png", "Wikidata photo.jpg"}, page_images={})
+    out = check_images(c, wp, FakeWdImages(), log=lambda *_: None)
+    assert out["photos"] == 2 and out["remplacées"] == 2
+    assert [r[0] for r in c.execute("SELECT image_file FROM player_profile ORDER BY player_id").fetchall()] == ["Wikidata photo.jpg", "Fine photo.jpg", "Wikidata photo.jpg"]
