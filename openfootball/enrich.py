@@ -209,9 +209,14 @@ def parse_birth(rows: list[dict]) -> dict[str, tuple[date, int]]:
             d = date(int(m.group(1)), max(int(m.group(2)), 1), max(int(m.group(3)), 1))
         except ValueError:
             continue
+        if not MIN_BIRTH_YEAR <= d.year <= date.today().year - MIN_PLAYER_AGE:
+            continue                                   # « né en 1515 » (un saint homonyme) ou « en 2100 » : une date impossible vaut moins qu'une date inconnue
         if qid not in best or prec > best[qid][1]:
             best[qid] = (d, prec)
     return best
+
+
+MIN_BIRTH_YEAR, MIN_PLAYER_AGE = 1870, 10          # un joueur d'un effectif est né après 1870 et a plus de 10 ans
 
 
 # Éléments Wikidata dont la date de naissance est celle d'un homonyme ou une erreur (carrière ou statistiques bien avant la naissance : Jefté Betancor « né en 2026 »,

@@ -35,7 +35,7 @@ Reminder: `export OPENFOOTBALL_CONTACT="your-contact"` before any command that q
 
 | Command | What it does | Useful options |
 |---|---|---|
-| `reconcile` | One player = one Wikidata QID; merges duplicates across languages. | |
+| `reconcile` | One player = one Wikidata QID; merges duplicates across languages. Also cleans names (wikicode leftovers), removes fake players (clubs, country codes, dates), merges a player cited twice in one squad or split between two seasons of a club, and erases impossible birth dates and empty pages. | |
 | `reconcile --names` | Attaches players **without a link** to an identified player of the same name, only if his career contains the same club-seasons. **Run after every `backfill`.** | |
 | `reconcile --wikidata` | For a player without a link: looks in Wikidata for a footballer of the same name whose clubs (P54) contain all our club-seasons; kept only if unique. Fast (a few minutes). | |
 | `reconcile --infobox` | Looks for the English page of players without a link and validates it with its infobox: the name as a title, then `(footballer)` / `(soccer)`, then the footballers listed on a disambiguation page, then a search (one request per player: **slow**). A stay not covered is accepted if it precedes a covered stay at the same club by at most 3 seasons (youth years). | |

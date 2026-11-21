@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 
 import duckdb
 
-from openfootball.names import fold, full_name
+from openfootball.names import clean_person_name, fold, full_name, name_tokens, same_name_variant
 from openfootball.sources.wikidata import club_qids   # titre Wikipedia -> QID (valable pour tout titre)
 
 
@@ -22,6 +22,8 @@ class ReconcileReport:
     unresolved: int = 0               # lien sans QID (page supprimée, sans élément Wikidata)
     merged: int = 0                   # doublons fusionnés
     blocked: list[str] = field(default_factory=list)   # fusions refusées (saison figée)
+    removed: int = 0                  # lignes d'effectif retirées à un homonyme lié à tort
+    blocked_pairs: list[tuple[int, int, int]] = field(default_factory=list)   # (joueur, joueur, club-saison) : deux identités distinctes pour un même rôle dans l'effectif
 
 
 def _frozen_rows(con, player_id: int) -> int:
@@ -50,7 +52,38 @@ def _merge(con, keep: int, dup: int) -> None:
                    WHERE id = ? AND link_title IS NOT NULL ON CONFLICT DO NOTHING""", [keep, dup])
     con.execute("UPDATE player_link SET player_id = ? WHERE player_id = ?", [keep, dup])
     con.execute("DELETE FROM player_wikidata WHERE player_id = ?", [dup])
+    _reassign_other_tables(con, keep, dup)
     con.execute("DELETE FROM player WHERE id = ?", [dup])
+
+
+_ONE_ROW = ("player_profile", "player_openfootball", "player_stat_source")          # une ligne par joueur : celle du joueur conservé gagne
+_SETS = ("player_stat_club", "player_stat_national")                                 # un jeu de lignes par joueur : idem
+_KEYED = {"squad_row_source": "club_season_id, source_lang", "squad_movement": "club_season_id, direction"}    # une ligne par (effectif, …) : en cas de conflit celle du joueur conservé gagne
+_MATCH_TABLES = ("match_goal", "match_lineup", "match_card")                         # le joueur y est cité par son nom : on le rattache simplement
+
+
+def _reassign_other_tables(con, keep: int, dup: int) -> None:
+    """Tout ce qui référence `dup` passe à `keep` (ou est écarté si `keep` a déjà l'équivalent) : sans cela le joueur ne peut pas être supprimé."""
+    for table in _ONE_ROW + _SETS:
+        if con.execute(f"SELECT count(*) FROM {table} WHERE player_id = ?", [keep]).fetchone()[0]:
+            con.execute(f"DELETE FROM {table} WHERE player_id = ?", [dup])
+        else:
+            con.execute(f"UPDATE {table} SET player_id = ? WHERE player_id = ?", [keep, dup])
+    for table, key in _KEYED.items():
+        con.execute(f"DELETE FROM {table} WHERE player_id = ? AND ({key}) IN (SELECT {key} FROM {table} WHERE player_id = ?)", [dup, keep])
+        con.execute(f"UPDATE {table} SET player_id = ? WHERE player_id = ?", [keep, dup])
+    for table in _MATCH_TABLES:
+        con.execute(f"UPDATE {table} SET player_id = ? WHERE player_id = ?", [keep, dup])
+
+
+def _delete_player(con, pid: int) -> None:
+    """Supprime un joueur et tout ce qui le référence (les citations dans les matches perdent seulement leur rattachement)."""
+    for table in _MATCH_TABLES:
+        con.execute(f"UPDATE {table} SET player_id = NULL WHERE player_id = ?", [pid])
+    for (table,) in con.execute("SELECT DISTINCT table_name FROM information_schema.columns WHERE column_name = 'player_id' "
+                                "AND table_name NOT IN ('match_goal', 'match_lineup', 'match_card')").fetchall():
+        con.execute(f"DELETE FROM {table} WHERE player_id = ?", [pid])
+    con.execute("DELETE FROM player WHERE id = ?", [pid])
 
 
 def purge_misplaced_squads(con: duckdb.DuckDBPyConnection, *, log=print) -> dict[str, int]:
@@ -98,22 +131,40 @@ def remove_non_players(con: duckdb.DuckDBPyConnection) -> int:
     """Retire les « joueurs » qui n'en sont pas (« 3 May » lu dans un tableau de suspensions, « Loan ») : sans page ni QID, avec un nom qui est une date ou une
     valeur de tableau. Leurs lignes d'effectif partent avec eux ; chaque retrait est tracé dans `amendment_log`. Une saison figée n'est jamais touchée.
     Rend le nombre de faux joueurs retirés."""
-    from openfootball.parse.squad import looks_like_non_player
     removed = 0
-    for pid, name in con.execute("""SELECT p.id, p.name FROM player p LEFT JOIN player_wikidata w ON w.player_id = p.id
-                                    WHERE w.player_id IS NULL AND p.link_title IS NULL""").fetchall():
-        if not looks_like_non_player(name) or _frozen_rows(con, pid):
+    for pid, name, why in non_players(con):
+        if _frozen_rows(con, pid):
             continue
         for cs, season in con.execute("""SELECT pcs.club_season_id, cs.season_id FROM player_club_season pcs JOIN club_season cs ON cs.id = pcs.club_season_id
                                          WHERE pcs.player_id = ?""", [pid]).fetchall():
             con.execute("INSERT INTO amendment_log (id, season_id, club_season_id, description, reason, amended_at) "
                         "VALUES ((SELECT coalesce(max(id), 0) + 1 FROM amendment_log), ?, ?, ?, ?, now())",
-                        [season, cs, f"« {name} » retiré de l'effectif", "ce n'est pas un nom de joueur (date ou valeur de tableau lue dans l'effectif)"])
-        for table in ("squad_row_source", "squad_movement", "player_club_season"):
-            con.execute(f"DELETE FROM {table} WHERE player_id = ?", [pid])
-        con.execute("DELETE FROM player WHERE id = ?", [pid])
+                        [season, cs, f"« {name} » retiré de l'effectif", why])
+        _delete_player(con, pid)
         removed += 1
     return removed
+
+
+_ENTITY_TITLE = re.compile(r"federation|fédération|association|roster slots?|soviet|republic|national (football )?team", re.I)
+
+
+def non_players(con) -> list[tuple[int, str, str]]:
+    """(id, nom, raison) des « joueurs » qui n'en sont pas : un nom de tableau (date, « Loan ») ; ou un club, une fédération, un code pays (« FRA », « AFC Ajax »)
+    dont la colonne a été lue comme un nom et que l'on a même rattaché à une page — jamais une personne : pas de naissance, pas de carrière, le QID est celui d'un club
+    ou le lien mène à une fédération."""
+    from openfootball.parse.squad import looks_like_non_player
+    out = []
+    club_qids = {r[0] for r in con.execute("SELECT wikidata_qid FROM club WHERE wikidata_qid IS NOT NULL").fetchall()}
+    for pid, name, qid, title, loose in con.execute("""
+            SELECT p.id, p.name, coalesce(p.wikidata_qid, w.qid), p.link_title, (w.player_id IS NULL AND p.link_title IS NULL)
+            FROM player p LEFT JOIN player_wikidata w ON w.player_id = p.id""").fetchall():
+        if loose:
+            if looks_like_non_player(name) or len(name.split()) >= 6:           # six mots sans lien : une liste de noms de famille collés, pas une personne
+                out.append((pid, name, "ce n'est pas un nom de joueur (date, note ou liste lue dans un tableau de l'effectif)"))
+        elif (re.fullmatch(r"[A-Z]{2,4}", name) or qid in club_qids or (title and _ENTITY_TITLE.search(title))) \
+                and not con.execute("SELECT 1 FROM player_birth WHERE player_id = ? UNION ALL SELECT 1 FROM player_career WHERE player_id = ? LIMIT 1", [pid, pid]).fetchone():
+            out.append((pid, name, "ce n'est pas un joueur (club, fédération ou code pays lu dans une colonne de l'effectif)"))
+    return out
 
 
 def normalize_player_names(con: duckdb.DuckDBPyConnection) -> int:
@@ -131,6 +182,287 @@ def normalize_player_names(con: duckdb.DuckDBPyConnection) -> int:
             con.execute("UPDATE player SET name = ? WHERE id = ?", [full, pid])
             changed += 1
     return changed
+
+
+_NO_REFERENCE = ("player_club_season", "player_career", "player_stat_club", "player_stat_national", "player_national", "squad_movement", "squad_row_source",
+                 "player_openfootball", "match_goal", "match_card", "match_lineup")
+
+
+def remove_orphan_players(con: duckdb.DuckDBPyConnection) -> int:
+    """Retire les fiches que plus rien ne référence : ni effectif, ni carrière, ni statistiques, ni sélection, ni match. Elles restent quand on détache un séjour impossible
+    d'un homonyme lié à tort (un saint de 1515 « joueur » du Torino) et n'apportent qu'une page vide. Rend le nombre de fiches retirées."""
+    ids = orphan_player_ids(con)
+    for pid in ids:
+        _delete_player(con, pid)
+    return len(ids)
+
+
+def orphan_player_ids(con: duckdb.DuckDBPyConnection) -> list[int]:
+    free = " AND ".join(f"NOT EXISTS (SELECT 1 FROM {t} x WHERE x.player_id = p.id)" for t in _NO_REFERENCE)
+    return [r[0] for r in con.execute(f"SELECT p.id FROM player p WHERE {free}").fetchall()]
+
+
+def drop_impossible_births(con: duckdb.DuckDBPyConnection) -> int:
+    """Efface une date de naissance que personne dans un effectif ne peut avoir (avant 1870, ou joueur de moins de 10 ans) : on préfère une date inconnue à une date fausse.
+    Rend le nombre de dates effacées."""
+    from datetime import date
+    from openfootball.enrich import MIN_BIRTH_YEAR, MIN_PLAYER_AGE
+    n = con.execute("SELECT count(*) FROM player_birth WHERE year(birth_date) < ? OR year(birth_date) > ?",
+                    [MIN_BIRTH_YEAR, date.today().year - MIN_PLAYER_AGE]).fetchone()[0]
+    con.execute("DELETE FROM player_birth WHERE year(birth_date) < ? OR year(birth_date) > ?", [MIN_BIRTH_YEAR, date.today().year - MIN_PLAYER_AGE])
+    return n
+
+
+def clean_player_names(con: duckdb.DuckDBPyConnection) -> int:
+    """Retire des noms déjà en base ce que le wikicode y a laissé (`note 2]`, `<small>(U18)</small>`, `†`, `(footballer, born 1989)`, « NOM, Prénom »…) : mêmes règles
+    que le lecteur (`clean_person_name`). Rend le nombre de noms modifiés."""
+    changed = 0
+    for pid, name in con.execute("SELECT id, name FROM player").fetchall():
+        clean = clean_person_name(name)
+        if clean != name:
+            con.execute("UPDATE player SET name = ? WHERE id = ?", [clean, pid])
+            changed += 1
+    return changed
+
+
+def _identity(qid: str | None, title: str | None) -> tuple | None:
+    return ("q", qid) if qid else (("t", title) if title else None)
+
+
+def _distinct(ia: tuple | None, ib: tuple | None) -> bool:
+    """Deux identités prouvent-elles deux personnes ? Deux QID différents, oui ; deux liens différents sans QID, oui ; un QID et un lien sans QID, non (le lien est
+    le plus souvent la page du même joueur, pas encore résolue en QID, ou une page inexistante)."""
+    if not ia or not ib or ia == ib:
+        return False
+    return ia[0] == ib[0]
+
+
+def merge_squad_duplicates(con: duckdb.DuckDBPyConnection) -> ReconcileReport:
+    """Répète `_squad_duplicates_pass` jusqu'à ce qu'elle ne change plus rien : une fusion révèle parfois une nouvelle paire (trois graphies d'un même nom). Cumule les comptes."""
+    total = ReconcileReport()
+    for _ in range(5):
+        r = _squad_duplicates_pass(con)
+        total.merged += r.merged
+        total.removed += r.removed
+        total.unresolved = r.unresolved                    # l'état après la dernière passe, pas une somme (les mêmes paires reviennent à chaque passe)
+        total.blocked = r.blocked
+        if not (r.merged or r.removed):
+            break
+    return total
+
+
+def squad_duplicate_pairs(con: duckdb.DuckDBPyConnection) -> list[tuple[int, int, int]]:
+    """Les (joueur, joueur, club-saison) qui ressemblent à une même personne citée deux fois dans un effectif : noms identiques à l'accent et à l'ordre près, ou presque
+    identiques avec le même numéro (et pas deux postes contradictoires) ; jamais deux numéros différents. Sert à fusionner et à auditer."""
+    names = dict(con.execute("SELECT id, name FROM player").fetchall())
+    squads: dict[int, list[tuple]] = defaultdict(list)
+    for cs, pid, num, pos in con.execute("SELECT club_season_id, player_id, shirt_number, position_code FROM player_club_season").fetchall():
+        squads[cs].append((pid, num, pos))
+    pairs = set()
+    for cs, members in squads.items():
+        for i in range(len(members)):
+            for j in range(i + 1, len(members)):
+                (a, na, pa), (b, nb, pb) = members[i], members[j]
+                if a == b or (na is not None and nb is not None and na != nb):
+                    continue
+                kind = same_name_variant(names[a], names[b])
+                if kind == "close" and not (na is not None and na == nb and (not pa or not pb or pa == pb)):
+                    continue
+                if kind:
+                    pairs.add((a, b, cs))
+    return sorted(pairs)
+
+
+def _squad_duplicates_pass(con: duckdb.DuckDBPyConnection) -> ReconcileReport:
+    """Un même effectif ne cite pas deux fois la même personne : « Matvey Safonov » (page anglaise) et « Matveï Safonov » (page française) au PSG, ou « Filip Šimeček » et
+    « Filip Simecek » au Slavia, sont un seul joueur lu dans deux sources. On fusionne deux joueurs d'un même club-saison quand
+      - leurs noms sont les mêmes mots à l'accent et à l'ordre près ; ou presque les mêmes (translittération, faute de frappe) ET portent le même numéro ;
+      - ils n'ont pas deux numéros différents, ni deux identités différentes (deux QID : on ne tranche pas, c'est à l'audit de le dire).
+    Le joueur conservé est celui qui a une identité, sinon celui qui a le plus de lignes ; il reprend le numéro et le poste que l'autre était seul à donner.
+    Une fusion qui touche une saison figée est refusée (SPEC L9) et rapportée. `unresolved` compte les paires à deux identités laissées telles quelles."""
+    report = ReconcileReport()
+    info: dict[int, dict] = {}
+    for pid, name, qid, title, n in con.execute("""
+            SELECT p.id, p.name, coalesce(p.wikidata_qid, w.qid), p.link_title, (SELECT count(*) FROM player_club_season x WHERE x.player_id = p.id)
+            FROM player p LEFT JOIN player_wikidata w ON w.player_id = p.id""").fetchall():
+        info[pid] = {"name": name, "ident": _identity(qid, title), "rows": n}
+    pairs = squad_duplicate_pairs(con)
+    seen_conflict: set[tuple[int, int]] = set()
+    moved: dict[int, int] = {}
+
+    def rep(x: int) -> int:
+        while x in moved:
+            x = moved[x]
+        return x
+
+    for a, b, cs in sorted(set(pairs)):
+        a, b = rep(a), rep(b)
+        if a == b:
+            continue
+        ia, ib = info[a]["ident"], info[b]["ident"]
+        if _distinct(ia, ib):
+            if (min(a, b), max(a, b)) not in seen_conflict:
+                seen_conflict.add((min(a, b), max(a, b)))
+                report.unresolved += 1
+                report.blocked_pairs.append((a, b, cs))
+            continue
+        keep, dup = sorted((a, b), key=lambda x: ({"q": 0, "t": 1}.get((info[x]["ident"] or ("", ""))[0], 2), -info[x]["rows"], x))
+        if _frozen_rows(con, dup) or _frozen_rows(con, keep):
+            report.blocked.append(f"{info[dup]['name']} / {info[keep]['name']}: fusion {dup}->{keep} touche une saison figée")
+            continue
+        con.execute("""UPDATE player_club_season k SET shirt_number = coalesce(k.shirt_number, d.shirt_number), position_code = coalesce(k.position_code, d.position_code),
+                       nationality_raw = coalesce(k.nationality_raw, d.nationality_raw)
+                       FROM player_club_season d WHERE k.player_id = ? AND d.player_id = ? AND k.club_season_id = d.club_season_id""", [keep, dup])
+        _merge(con, keep, dup)
+        moved[dup] = keep
+        info[keep]["rows"] += info[dup]["rows"]
+        info[keep]["ident"] = info[keep]["ident"] or info[dup]["ident"]
+        report.merged += 1
+    homonyms = resolve_homonym_slots(con, report.blocked_pairs)
+    report.removed, report.unresolved = homonyms.merged, homonyms.unresolved
+    report.blocked += homonyms.blocked
+    return report
+
+
+def _impossible_year(i: dict, year: int) -> bool:
+    """Ce joueur (naissance, carrière) peut-il figurer dans un effectif de cette saison ? Mêmes règles que `implausible_stays`, pour ne pas recoller ce qu'elle détache."""
+    if any(s <= year + 1 and e >= year for s, e in i["spans"]):
+        return False
+    if i["spans"] and max(e for _, e in i["spans"]) <= year - RETIRED_YEARS:
+        return True
+    born = i["born"]
+    return bool(born and (born.year > year - MIN_AGE or born.year < year - MAX_AGE))
+
+
+def merge_split_players(con: duckdb.DuckDBPyConnection) -> ReconcileReport:
+    """Répète `_split_players_pass` jusqu'à ce qu'elle ne change plus rien (trois morceaux d'un même joueur demandent deux tours). Cumule les comptes."""
+    total = ReconcileReport()
+    for _ in range(5):
+        r = _split_players_pass(con)
+        total.merged += r.merged
+        total.blocked += r.blocked
+        if not r.merged:
+            break
+    return total
+
+
+def _split_players_pass(con: duckdb.DuckDBPyConnection) -> ReconcileReport:
+    """Le même joueur coupé en deux fiches d'un même club, d'une saison à l'autre : l'une liée à sa page (ou à son QID), l'autre lue sans lien (ou écrite autrement) dans la saison
+    suivante. Aucune saison commune, donc `merge_squad_duplicates` ne les voit pas. On les réunit quand
+      - c'est le même club, et le même nom (mots identiques à l'accent et à l'ordre près ; un nom d'un seul mot — « Diego » — exige en plus le même numéro), ou un nom
+        presque pareil ET le même numéro ;
+      - les saisons se touchent (au plus une saison d'écart) sans jamais coïncider : deux homonymes du même club ne se suivent pas de saison en saison sans se croiser ;
+      - ni deux identités distinctes (deux QID), ni deux dates de naissance différentes.
+    Une fusion qui touche une saison figée est refusée (SPEC L9). `merged` = fiches fusionnées."""
+    report = ReconcileReport()
+    info: dict[int, dict] = {}
+    for pid, name, qid, title, bd in con.execute("""
+            SELECT p.id, p.name, coalesce(p.wikidata_qid, w.qid), p.link_title,
+                   (SELECT min(birth_date) FROM player_birth b WHERE b.player_id = p.id AND b.precision >= 9)
+            FROM player p LEFT JOIN player_wikidata w ON w.player_id = p.id""").fetchall():
+        info[pid] = {"name": name, "ident": _identity(qid, title), "born": bd, "rows": 0, "spans": [],
+                     "by_club": defaultdict(lambda: {"years": set(), "numbers": set()})}          # club -> saisons et numéros portés dans ce club
+    for pid, start, end in con.execute("SELECT player_id, coalesce(start_year, 0), coalesce(end_year, 9999) FROM player_career").fetchall():
+        info[pid]["spans"].append((start, end))
+    by_club: dict[int, set[int]] = defaultdict(set)
+    for club, pid, year, num in con.execute("""SELECT cs.club_id, x.player_id, s.start_year, x.shirt_number FROM player_club_season x
+            JOIN club_season cs ON cs.id = x.club_season_id JOIN season s ON s.id = cs.season_id""").fetchall():
+        i = info[pid]
+        i["rows"] += 1
+        by_club[club].add(pid)
+        i["by_club"][club]["years"].add(year)
+        if num is not None:
+            i["by_club"][club]["numbers"].add(num)
+
+    candidates: set[tuple[int, int, int]] = set()
+    for club, pids in by_club.items():
+        same: dict[tuple, list[int]] = defaultdict(list)
+        numbered: dict[int, list[int]] = defaultdict(list)
+        for pid in pids:
+            same[tuple(sorted(name_tokens(info[pid]["name"])))].append(pid)
+            for n in info[pid]["by_club"][club]["numbers"]:
+                numbered[n].append(pid)
+        for key, group in same.items():
+            for i in range(len(group)):
+                for j in range(i + 1, len(group)):
+                    a, b = sorted((group[i], group[j]))
+                    if len(key) > 1 or info[a]["by_club"][club]["numbers"] & info[b]["by_club"][club]["numbers"]:
+                        candidates.add((a, b, club))
+        for group in numbered.values():
+            for i in range(len(group)):
+                for j in range(i + 1, len(group)):
+                    a, b = sorted((group[i], group[j]))
+                    if same_name_variant(info[a]["name"], info[b]["name"]):
+                        candidates.add((a, b, club))
+
+    moved: dict[int, int] = {}
+
+    def rep(x: int) -> int:
+        while x in moved:
+            x = moved[x]
+        return x
+
+    for a, b, club in sorted(candidates):
+        a, b = rep(a), rep(b)
+        if a == b or a not in info or b not in info:
+            continue
+        ia, ib = info[a], info[b]
+        if _distinct(ia["ident"], ib["ident"]) or (ia["born"] and ib["born"] and ia["born"] != ib["born"]):
+            continue
+        ya, yb = ia["by_club"][club]["years"], ib["by_club"][club]["years"]
+        if ya & yb or min(yb) > max(ya) + 1 or min(ya) > max(yb) + 1:
+            continue
+        if any(_impossible_year(ia, y) for c in ib["by_club"].values() for y in c["years"]) \
+                or any(_impossible_year(ib, y) for c in ia["by_club"].values() for y in c["years"]):
+            continue                                          # le rattachement créerait un séjour que l'âge ou la carrière interdit : `split_implausible_stays` le défait
+        keep, dup = sorted((a, b), key=lambda x: ({"q": 0, "t": 1}.get((info[x]["ident"] or ("", ""))[0], 2), -info[x]["rows"], x))
+        if _frozen_rows(con, dup) or _frozen_rows(con, keep):
+            report.blocked.append(f"{info[dup]['name']} / {info[keep]['name']}: fusion {dup}->{keep} touche une saison figée")
+            continue
+        _merge(con, keep, dup)
+        moved[dup] = keep
+        ki, di = info[keep], info[dup]
+        ki["rows"] += di["rows"]
+        ki["ident"] = ki["ident"] or di["ident"]
+        ki["born"] = ki["born"] or di["born"]
+        for c, d in di["by_club"].items():
+            ki["by_club"][c]["years"] |= d["years"]
+            ki["by_club"][c]["numbers"] |= d["numbers"]
+        report.merged += 1
+    return report
+
+
+def resolve_homonym_slots(con: duckdb.DuckDBPyConnection, pairs: list[tuple[int, int, int]]) -> ReconcileReport:
+    """Deux joueurs d'identités différentes tiennent la même place d'un effectif (même nom, même numéro) : un seul peut y être, l'autre est un homonyme lié à tort
+    (Javier Hernández au Real Madrid : le QID de l'attaquant mexicain et celui d'un autre). On garde celui dont la CARRIÈRE contient ce club cette saison et on retire la
+    ligne de l'autre, seulement si l'un est prouvé et l'autre non. Sinon on ne tranche pas (`unresolved`) : c'est à l'audit de le dire. `merged` = lignes retirées."""
+    report = ReconcileReport()
+    link_qid = _club_qids_by_link(con)
+    careers: dict[int, list[tuple]] = defaultdict(list)
+    for pid, link, name, start, end in con.execute("SELECT player_id, club_link, club_name, start_year, end_year FROM player_career").fetchall():
+        careers[pid].append((link, name, start, end))
+    for a, b, cs in pairs:
+        row = con.execute("""SELECT cl.wikipedia_title, s.start_year, cl.wikidata_qid, s.status, s.id, cl.name_en, s.label FROM club_season x JOIN club cl ON cl.id = x.club_id
+                             JOIN season s ON s.id = x.season_id WHERE x.id = ?""", [cs]).fetchone()
+        if not row or not all(con.execute("SELECT 1 FROM player_club_season WHERE player_id = ? AND club_season_id = ?", [p, cs]).fetchone() for p in (a, b)):
+            continue                                              # la place a déjà été réglée (fusion ou retrait précédents)
+        title, year, club_qid, status, season_id, club, label = row
+        ok = {p: _supported(careers.get(p, []), title or club, year, club_qid, link_qid) for p in (a, b)}
+        if ok[a] == ok[b]:
+            report.unresolved += 1
+            continue
+        wrong = b if ok[a] else a
+        if status == "frozen":
+            report.blocked.append(f"{club} {label} : homonyme {wrong} dans une saison figée")
+            continue
+        name = con.execute("SELECT name FROM player WHERE id = ?", [wrong]).fetchone()[0]
+        con.execute("INSERT INTO amendment_log (id, season_id, club_season_id, description, reason, amended_at) "
+                    "VALUES ((SELECT coalesce(max(id), 0) + 1 FROM amendment_log), ?, ?, ?, ?, now())",
+                    [season_id, cs, f"« {name} » retiré de l'effectif", "homonyme lié à tort : sa carrière ne contient pas ce club cette saison, celle de l'autre joueur du même nom, si"])
+        for table in ("squad_row_source", "squad_movement", "player_club_season"):
+            con.execute(f"DELETE FROM {table} WHERE player_id = ? AND club_season_id = ?", [wrong, cs])
+        report.merged += 1
+    return report
 
 
 def apply_player_aliases(con: duckdb.DuckDBPyConnection) -> int:

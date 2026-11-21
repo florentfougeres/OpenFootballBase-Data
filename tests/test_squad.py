@@ -302,7 +302,7 @@ def test_wiki_emphasis_and_category_annotations_are_removed_from_names():
     assert clean_name("''Andrea Romanò''") == "Andrea Romanò"
     assert clean_name("Michael Ledger '''U23'''") == "Michael Ledger"
     assert clean_name("Kai Crampton ''(U21)''") == "Kai Crampton"
-    assert clean_name("\"Luismi\" '''Quezada'''") == "\"Luismi\" Quezada"
+    assert clean_name("\"Luismi\" '''Quezada'''") == "Luismi Quezada"          # le surnom entre guillemets n'est pas une partie du nom
     assert clean_name("Giorgi Ts'it'aishvili") == "Giorgi Ts'it'aishvili"          # une apostrophe simple reste
     assert clean_name("Cissokho, MamoudouMamoudou Cissokho") == "Mamoudou Cissokho"
 

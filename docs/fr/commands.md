@@ -35,7 +35,7 @@ Rappel : `export OPENFOOTBALL_CONTACT="votre-contact"` avant toute commande qui 
 
 | Commande | À quoi elle sert | Options utiles |
 |---|---|---|
-| `reconcile` | Un joueur = un QID Wikidata ; fusionne les doublons entre langues. | |
+| `reconcile` | Un joueur = un QID Wikidata ; fusionne les doublons entre langues. Nettoie aussi les noms (restes de wikicode), retire les faux joueurs (clubs, codes pays, dates), fusionne un même joueur cité deux fois dans un effectif ou coupé entre deux saisons d'un club, efface les dates de naissance impossibles et les fiches vides. | |
 | `reconcile --names` | Rattache les joueurs **sans lien** à un joueur identifié de même nom, seulement si sa carrière contient les mêmes club-saisons. **À lancer après chaque `backfill`.** | |
 | `reconcile --wikidata` | Pour un joueur sans lien : cherche dans Wikidata un footballeur de même nom dont les clubs (P54) contiennent tous nos club-saisons ; retenu seulement s'il est unique. Rapide (quelques minutes). | |
 | `reconcile --infobox` | Cherche la page anglaise des joueurs sans lien et la valide par son infobox : le nom comme titre, puis `(footballer)` / `(soccer)`, puis les footballeurs listés sur une page d'homonymie, puis une recherche (une requête par joueur : **lent**). Un séjour non couvert est accepté s'il précède d'au plus 3 saisons un séjour couvert dans le même club (années de jeunes). | |

@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import re
 
-from openfootball.names import full_name
+from openfootball.names import clean_person_name, full_name
 import dataclasses
 from dataclasses import dataclass
 
@@ -48,19 +48,23 @@ _EXCLUDED_SECTION = re.compile(
     r"reserve|academy|youth|under-?\d|u-?\d{2}|b team|filial|cantera|juvenil|\bII$|"
     r"coaching staff|^staff\b|managerial|^management|"
     r"^goals?$|goalscorers?|top scor|assists?|disciplin|suspensions?|sanctions?|contract|award|clean sheet|hat-?trick|player of the|"
-    r"most appearances|top \d+|all[- ]time|retired numbers?|records?|hall of fame|legends",             # tableaux de records de la page d'un club : des légendes, pas l'effectif
+    r"most appearances|top \d+|top minutes|all[- ]time|retired numbers?|records?|hall of fame|legends|"             # tableaux de records de la page d'un club : des légendes, pas l'effectif
+    r"dobletes|doubles?\b|braces|goleadores|^captains?$|gols (sofridos|marcados)|gamper trophy",                  # buteurs, doublés, capitaines : le numéro de la ligne est un nombre de buts, pas un numéro de maillot
     re.I)
 
 
 _NO_LETTERS = re.compile(r"^[^A-Za-zÀ-ÿ]*$")
 _DATE = re.compile(r"^\d{1,2}(?:st|nd|rd|th|er)?\.?\s+[A-Za-zÀ-ÿ]+(?:\s+\d{4})?$")             # « 3 May », « 14 février 2014 » : une date lue comme un nom (tableau de suspensions)
 _NOT_A_PLAYER = re.compile(r"^\W*(totals?|own goals?|opponents?|o\.?g\.?|n/?a|vacant|loan(?:ed)?|free transfer|end of loan|\d+\s*px(?:\|.*)?)\W*$", re.I)
+_DATE_FIRST_MONTH = re.compile(r"^(?:[A-Za-zÀ-ÿ]+\.?\s+\d{1,2},?\s+\d{4}|[A-Za-zÀ-ÿ]{3,9}[/.\- ]\d{4})$")      # « January 1, 2022 », « jan/2023 »
+_TRANSFER_NOTE = re.compile(r"\b(verhuurd|vertrokken|vertrek|uitgeleend|prestito|ceduto|cedido|préstamo|prêté|left (?:in|on|the club))\b", re.I)      # « In maart 2015 vertrokken »
 
 
 def looks_like_non_player(name: str) -> bool:
     """Un nom qui n'en est pas un (date, total, « Loan », seulement des chiffres) : mêmes règles que le lecteur, pour nettoyer ce qui est déjà en base."""
     name = (name or "").strip()
-    return not name or bool(_NOT_A_PLAYER.match(name) or _NO_LETTERS.match(name) or _DATE.match(name))
+    return not name or bool(_NOT_A_PLAYER.match(name) or _NO_LETTERS.match(name) or _DATE.match(name) or _DATE_FIRST_MONTH.match(name)
+                            or (len(name.split()) >= 2 and _TRANSFER_NOTE.search(name)))
 _TEMPLATES = ("Fs player", "Efs player", "Football squad player",
               "Extended football squad player", "Fb si player")
 
@@ -128,9 +132,8 @@ def strip_sort_key(name: str) -> str:
 
 def clean_name(name: str) -> str:
     """Nom affichable : sans italique/gras wiki (`''Nom''`), sans annotation de catégorie (`(U21)`), sans clé de tri collée."""
-    n = re.sub(r"'{2,}", "", name).strip()
-    n = re.sub(r"\s*\(?\bU\s?\d{2}\)?\s*$", "", n)
-    return strip_sort_key(n.strip())
+    n = re.sub(r"\s*\(?\bU\s?\d{2}\)?\s*$", "", re.sub(r"'{2,}", "", name).strip())
+    return clean_person_name(strip_sort_key(n.strip()))
 
 
 def _name_and_link(raw: str, full: bool = False) -> tuple[str | None, str | None]:
@@ -300,7 +303,7 @@ def _table_entries(block: str, section: str) -> list[SquadEntry]:
             if "name" not in cols or len(cells) <= cols["name"]:
                 continue
             name, link = _name_and_link(cells[cols["name"]][1], full=True)
-            if not name or _NOT_A_PLAYER.match(name) or _NO_LETTERS.match(name) or _DATE.match(name):
+            if looks_like_non_player(name):
                 continue
             nat = None
             for c in cells[:cols["name"]]:                    # colonnes d'avant le nom sans titre : drapeau et numéro, reconnus à leur contenu

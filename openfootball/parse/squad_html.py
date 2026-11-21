@@ -12,8 +12,9 @@ from __future__ import annotations
 import re
 from html.parser import HTMLParser
 
+from openfootball.names import clean_person_name
 from openfootball.parse.positions import normalize_position
-from openfootball.parse.squad import SquadEntry, _DATE, _NO_LETTERS, _NOT_A_PLAYER, _dedupe
+from openfootball.parse.squad import SquadEntry, _dedupe, looks_like_non_player
 
 _SKIP_HEADING = re.compile(r"transfer|signings|departures|arrivals|kit|sponsor|krallığı|asist|hat-?trick|topscorer|doelpunt|vertrokken|aangetrokken|a-jeugd|mutaties|\bjong\b", re.I)
 
@@ -150,8 +151,8 @@ def parse_squad_html(html: str, lang: str | None = None) -> list[SquadEntry]:
             name_cell = row[cols["name"]]
             link_title, shown = next(((t, s) for t, s in name_cell.links if s), (None, ""))
             name = (shown or _txt(name_cell)).strip()
-            name = re.sub(r"\s*\((?:captain|c|vc|vice-captain)\)\s*$", "", name, flags=re.I)
-            if not name or _NOT_A_PLAYER.match(name) or _NO_LETTERS.match(name) or _DATE.match(name):
+            name = clean_person_name(name)
+            if looks_like_non_player(name):
                 continue
             link = None if (link_title or "").endswith("(page does not exist)") else link_title
             nat = None

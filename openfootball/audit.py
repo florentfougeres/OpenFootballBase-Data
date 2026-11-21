@@ -11,7 +11,11 @@ import duckdb
 from openfootball.checks import Problem
 from openfootball.honours import VACANT
 from openfootball.matches import STANDINGS_SQL
-from openfootball.reconcile import implausible_stays
+from datetime import date
+
+from openfootball.enrich import MIN_BIRTH_YEAR, MIN_PLAYER_AGE
+from openfootball.names import clean_person_name
+from openfootball.reconcile import _distinct, _identity, implausible_stays, non_players, orphan_player_ids, squad_duplicate_pairs
 
 MIN_FIELD = 10            # une compétition-saison n'est « connue en entier » qu'avec au moins ce nombre de clubs inscrits
 MIN_AGE_STATS = 13        # âge minimal pour une ligne de statistiques (Falcao joue à 13 ans) ; la carrière commence avec les équipes de jeunes, dès 7 ans
@@ -30,8 +34,46 @@ def _scan(con: duckdb.DuckDBPyConnection, check: str, severity: str, sql: str, w
     return out
 
 
-def run_audit(con: duckdb.DuckDBPyConnection) -> list[Problem]:
+def _listed(check: str, severity: str, items: list[tuple[str, str]], what: str) -> list[Problem]:
+    """Comme `_scan`, pour des cas calculés en Python : (portée, détail) ; au plus LIMIT listés, plus le total."""
+    out = [Problem(check, severity, scope, detail) for scope, detail in items[:LIMIT]]
+    if len(items) > LIMIT:
+        out.append(Problem(check, severity, f"{len(items)} cas", f"{what} (les {LIMIT} premiers sont listés)"))
+    return out
+
+
+def _identity_problems(con: duckdb.DuckDBPyConnection) -> list[Problem]:
+    """Qualité des fiches de joueurs : un nom propre, un vrai joueur, une seule fiche par personne dans un effectif."""
     out: list[Problem] = []
+    names = dict(con.execute("SELECT id, name FROM player").fetchall())
+    out += _listed("name_artifact", "blocking", [(n, f"devrait s'écrire « {clean_person_name(n)} » : reste de wikicode ou annotation dans le nom")
+                                                 for n in names.values() if clean_person_name(n) != n],
+                   "noms de joueurs avec des restes de wikicode (`openfootball reconcile` les nettoie)")
+    out += _listed("not_a_player", "blocking", [(name, why) for _, name, why in non_players(con)],
+                   "« joueurs » qui n'en sont pas (club, fédération, code pays, date lus dans un effectif ; `openfootball reconcile` les retire)")
+    out += _scan(con, "birth_impossible", "blocking", """
+        SELECT p.name || ' (' || b.birth_date || ')', 'date de naissance impossible pour un joueur : homonyme historique ou erreur Wikidata'
+        FROM player_birth b JOIN player p ON p.id = b.player_id WHERE year(b.birth_date) < ? OR year(b.birth_date) > ?""",
+                 "dates de naissance impossibles (`openfootball reconcile` les efface)", [MIN_BIRTH_YEAR, date.today().year - MIN_PLAYER_AGE])
+    orphans = orphan_player_ids(con)
+    out += _listed("orphan_player", "warning", [(names[p], "plus rien ne le référence : fiche vide") for p in orphans],
+                   "fiches de joueurs sans effectif, carrière, statistiques ni match (`openfootball reconcile` les retire)")
+    ident = {pid: _identity(qid, title) for pid, qid, title in con.execute(
+        "SELECT p.id, coalesce(p.wikidata_qid, w.qid), p.link_title FROM player p LEFT JOIN player_wikidata w ON w.player_id = p.id").fetchall()}
+    club = {cs: f"{c} {s}" for cs, c, s in con.execute(
+        "SELECT x.id, cl.name_en, s.label FROM club_season x JOIN club cl ON cl.id = x.club_id JOIN season s ON s.id = x.season_id").fetchall()}
+    twice, homonyms = [], []
+    for a, b, cs in squad_duplicate_pairs(con):
+        (homonyms if _distinct(ident[a], ident[b]) else twice).append((f"{names[a]} / {names[b]} — {club[cs]}", ""))
+    out += _listed("squad_duplicate", "blocking", [(s, "même joueur cité deux fois dans l'effectif (`openfootball reconcile` les fusionne)") for s, _ in twice],
+                   "joueurs cités deux fois dans un même effectif")
+    out += _listed("squad_homonym", "warning", [(s, "deux identités différentes pour la même place : l'une est un homonyme lié à tort, la carrière ne tranche pas") for s, _ in homonyms],
+                   "places d'effectif revendiquées par deux identités")
+    return out
+
+
+def run_audit(con: duckdb.DuckDBPyConnection) -> list[Problem]:
+    out: list[Problem] = _identity_problems(con)
     for code, year in VACANT:
         out += _scan(con, "vacant_title", "blocking", """
             SELECT co.code || ' ' || w.season_start, 'titre vacant présent : ' || w.winner_name

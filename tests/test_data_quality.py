@@ -112,3 +112,232 @@ def test_record_tables_and_current_squads_read_for_a_past_season_are_purged():
     assert c.execute("SELECT count(*) FROM known_gap WHERE club_season_id = 1").fetchone()[0] == 1          # le club-saison passé devient un trou connu
     assert c.execute("SELECT count(*) FROM amendment_log").fetchone()[0] == 3
     assert purge_misplaced_squads(c, log=lambda *_: None) == {"records": 0, "page_du_club": 0}              # idempotent
+
+
+# --- doublons d'un même effectif, noms mal formés, entités lues comme des joueurs -----------------------------------------------------------------------------
+
+def _squad(rows):
+    """Un effectif (club-saison 1) ; rows = (id, nom, qid, numéro, poste)."""
+    c = _db()
+    for pid, name, qid, num, pos in rows:
+        c.execute("INSERT INTO player (id, name, wikidata_qid) VALUES (?, ?, ?)", [pid, name, qid])
+        if qid:
+            c.execute("INSERT INTO player_wikidata VALUES (?, ?)", [pid, qid])
+        c.execute("INSERT INTO player_club_season (id, player_id, club_season_id, shirt_number, position_code, confidence, source, stint) "
+                  "VALUES (?, ?, 1, ?, ?, 'attested', 'wikipedia_season', 'full')", [pid, pid, num, pos])
+    return c
+
+
+def _names(c):
+    return [r[0] for r in c.execute("SELECT name FROM player ORDER BY id").fetchall()]
+
+
+def test_same_goalkeeper_written_two_ways_in_one_squad_is_merged_into_the_identified_one():
+    from openfootball.reconcile import merge_squad_duplicates
+    c = _squad([(1, "Matvey Safonov", "Q36371294", 39, "GK"), (2, "Matveï Safonov", None, 39, "GK"), (3, "Lucas Chevalier", "Q98102459", 30, "GK")])
+    assert merge_squad_duplicates(c).merged == 1
+    assert _names(c) == ["Matvey Safonov", "Lucas Chevalier"]
+    assert c.execute("SELECT count(*) FROM player_club_season").fetchone()[0] == 2
+    assert merge_squad_duplicates(c).merged == 0                                              # idempotent
+
+
+def test_accents_and_word_order_do_not_make_two_players():
+    from openfootball.reconcile import merge_squad_duplicates
+    c = _squad([(1, "Filip Šimeček", None, None, None), (2, "Filip Simecek", None, None, None), (3, "Šimeček Filip", None, None, None)])
+    assert merge_squad_duplicates(c).merged == 2
+    assert len(_names(c)) == 1
+
+
+def test_similar_names_with_different_shirts_or_two_identities_stay_apart():
+    from openfootball.reconcile import merge_squad_duplicates
+    c = _squad([(1, "Lyle Taylor", None, 33, None), (2, "Lyle Tayler", None, 36, None),                 # numéros différents : deux joueurs
+                (3, "Bilal Brahimi", "Q107649655", 21, None), (4, "Billal Brahimi", "Q56289677", 21, None),   # deux QID : on ne tranche pas
+                (5, "Kilian Belazzoug", "Q136500038", 60, "MF"), (6, "Kylian Belazzoug", None, 60, "DF")])    # même numéro mais postes contradictoires : écarté
+    r = merge_squad_duplicates(c)
+    assert r.merged == 0 and r.unresolved == 1
+    assert len(_names(c)) == 6
+
+
+def test_the_kept_player_takes_the_shirt_and_position_only_the_other_one_gave():
+    from openfootball.reconcile import merge_squad_duplicates
+    c = _squad([(1, "Tobías Rubio", "Q1", None, None), (2, "Tobias Rubio", None, 34, "FW")])
+    assert merge_squad_duplicates(c).merged == 1
+    assert c.execute("SELECT shirt_number, position_code FROM player_club_season").fetchall() == [(34, "FW")]
+
+
+def test_squad_duplicate_in_a_frozen_season_is_refused():
+    from openfootball.reconcile import merge_squad_duplicates
+    c = _squad([(1, "Filip Šimeček", None, None, None), (2, "Filip Simecek", None, None, None)])
+    c.execute("UPDATE season SET status = 'frozen', frozen_at = now(), content_hash = 'h' WHERE id = 1")
+    r = merge_squad_duplicates(c)
+    assert r.merged == 0 and len(r.blocked) == 1
+
+
+def test_wikicode_left_in_names_is_cleaned_without_touching_real_names():
+    from openfootball.names import clean_person_name as clean
+    cases = {"Ibrahim Fofananote 2]": "Ibrahim Fofana", "Dominic Corness <small>(U18)</small>": "Dominic Corness", "Jayden Reid}}}}": "Jayden Reid",
+             "Ian McGrane †": "Ian McGrane", "Fernando Zampedri (7)": "Fernando Zampedri", "Cauê (footballer, born 1989)": "Cauê",
+             "Ronny (calciatore) König": "Ronny König", '"Dani" Mas': "Dani Mas", 'Mario Jiménez, "Gambín"': "Mario Jiménez",
+             "''Alberto Cossentino''": "Alberto Cossentino", "GARCÍA, Eduardo": "Eduardo García", "Aziz Deen-Conteh B": "Aziz Deen-Conteh",
+             ".Hallgrimur Jonasson": "Hallgrimur Jonasson", "Reinaldo  Fontalvo": "Reinaldo Fontalvo"}
+    for dirty, good in cases.items():
+        assert clean(dirty) == good, dirty
+    for fine in ("N'Golo Kanté", "Jean-Claude Van Damme", "Vinícius Jr.", "Eddy Davis III", "Rúben Dias", "Pelé", "D'Arcy Lowe", "12"):
+        assert clean(fine) == fine, fine
+
+
+def test_names_already_in_the_database_are_cleaned_and_the_duplicate_they_hid_is_merged():
+    from openfootball.reconcile import clean_player_names, merge_squad_duplicates
+    c = _squad([(1, "Fernando Zampedri", "Q16302958", 9, None), (2, "Fernando Zampedri (7)", None, None, None), (3, "GARCÍA, Eduardo", None, 4, None)])
+    assert clean_player_names(c) == 2
+    assert merge_squad_duplicates(c).merged == 1
+    assert _names(c) == ["Fernando Zampedri", "Eduardo García"]
+
+
+def test_clubs_federations_and_country_codes_read_as_players_are_removed_but_real_people_are_kept():
+    from openfootball.reconcile import remove_non_players
+    c = _squad([(1, "AFC Ajax", "Q81888", None, None), (2, "FRA", "Q244750", None, None), (3, "Kylian Mbappé", "Q21621", 10, None)])
+    c.execute("INSERT INTO club (id, name_en, country_code, wikidata_qid) VALUES (3, 'AFC Ajax', 'TUR', 'Q81888')")
+    c.execute("INSERT INTO player_birth (player_id, birth_date, precision) VALUES (3, DATE '1998-12-20', 11)")
+    assert remove_non_players(c) == 2
+    assert _names(c) == ["Kylian Mbappé"]
+    assert remove_non_players(c) == 0
+
+
+def test_merging_a_player_that_has_stats_and_matches_does_not_leave_dangling_rows():
+    from openfootball.reconcile import merge_squad_duplicates
+    c = _squad([(1, "Filip Šimeček", "Q1", None, None), (2, "Filip Simecek", None, None, None)])
+    c.execute("INSERT INTO player_stat_club (player_id, seq, club, season, competition_group, apps, goals) VALUES (2, 1, 'Slavia', '2022', 'League', 10, 1)")
+    assert merge_squad_duplicates(c).merged == 1
+    assert c.execute("SELECT player_id FROM player_stat_club").fetchall() == [(1,)]
+
+
+def _career(c, pid, club, start, end):
+    c.execute("INSERT INTO player_career (id, player_id, seq, start_year, end_year, club_name, club_link, loan, source_lang, source_title) "
+              "VALUES ((SELECT coalesce(max(id), 0) + 1 FROM player_career), ?, 1, ?, ?, ?, ?, false, 'en', 'x')", [pid, start, end, club, club])
+
+
+def test_two_identified_homonyms_in_one_squad_keep_only_the_one_whose_career_has_the_club():
+    from openfootball.reconcile import merge_squad_duplicates
+    c = _squad([(1, "Javier Hernández", "Q165125", 14, None), (2, "Javier Hernández", "Q410758", 14, None)])
+    _career(c, 1, "Galatasaray S.K. (football)", 2016, 2020)             # la saison de l'effectif (2017) est couverte
+    _career(c, 2, "Elche CF", 2010, 2012)
+    r = merge_squad_duplicates(c)
+    assert (r.merged, r.removed, r.unresolved) == (0, 1, 0)
+    assert [x[0] for x in c.execute("SELECT player_id FROM player_club_season").fetchall()] == [1]
+    assert c.execute("SELECT count(*) FROM amendment_log").fetchone()[0] == 1
+
+
+def test_two_identified_homonyms_are_left_alone_when_the_career_cannot_tell_them_apart():
+    from openfootball.reconcile import merge_squad_duplicates
+    c = _squad([(1, "Javier Hernández", "Q165125", 14, None), (2, "Javier Hernández", "Q410758", 14, None)])
+    r = merge_squad_duplicates(c)                                           # aucune carrière connue : on ne tranche pas
+    assert (r.merged, r.removed, r.unresolved) == (0, 0, 1)
+    assert c.execute("SELECT count(*) FROM player_club_season").fetchone()[0] == 2
+
+
+def test_a_link_without_qid_and_a_qid_for_the_same_name_and_shirt_are_one_player():
+    from openfootball.reconcile import merge_squad_duplicates
+    c = _squad([(1, "Igor Karpovich", "Q5994587", 15, None)])
+    c.execute("INSERT INTO player (id, name, link_lang, link_title) VALUES (2, 'Ihar Karpovich', 'en', 'Ihar Karpovich')")
+    c.execute("INSERT INTO player_club_season (id, player_id, club_season_id, shirt_number, confidence, source, stint) VALUES (2, 2, 1, 15, 'attested', 'wikipedia_season', 'full')")
+    assert merge_squad_duplicates(c).merged == 1
+    assert c.execute("SELECT id FROM player").fetchall() == [(1,)]
+    assert c.execute("SELECT count(*) FROM player_link WHERE player_id = 1").fetchone()[0] == 1          # le lien du doublon est gardé : il ne sera pas recréé
+
+
+def _two_seasons_db(first, second, year2=2018):
+    """Un club, deux saisons (2017 et `year2`) ; first/second = (id, nom, qid, numéro) du joueur cité dans chacune."""
+    c = _db()
+    c.execute("INSERT INTO season (id, start_year, label) VALUES (2, ?, ?)", [year2, f"{year2}/x"])
+    c.execute("INSERT INTO club_season (id, club_id, season_id, competition_id) VALUES (2, 2, 2, 1)")
+    for cs, (pid, name, qid, num) in ((1, first), (2, second)):
+        c.execute("INSERT INTO player (id, name, wikidata_qid) VALUES (?, ?, ?)", [pid, name, qid])
+        if qid:
+            c.execute("INSERT INTO player_wikidata VALUES (?, ?)", [pid, qid])
+        c.execute("INSERT INTO player_club_season (id, player_id, club_season_id, shirt_number, confidence, source, stint) VALUES (?, ?, ?, ?, 'attested', 'wikipedia_season', 'full')",
+                  [pid, pid, cs, num])
+    return c
+
+
+def test_a_player_split_between_two_seasons_of_the_same_club_is_reunited():
+    from openfootball.reconcile import merge_split_players
+    c = _two_seasons_db((1, "Boubakar Kouyaté", "Q26704510", 23), (2, "Boubakar Kouyate", None, None))
+    assert merge_split_players(c).merged == 1
+    assert c.execute("SELECT player_id FROM player_club_season ORDER BY club_season_id").fetchall() == [(1,), (1,)]
+    assert merge_split_players(c).merged == 0
+
+
+def test_split_players_stay_apart_for_a_single_word_name_without_the_same_shirt_two_qids_or_different_births():
+    from openfootball.reconcile import merge_split_players
+    c = _two_seasons_db((1, "Diego", "Q1", 9), (2, "Diego", None, 22))                          # un prénom seul : deux Diego se succèdent sans se croiser
+    assert merge_split_players(c).merged == 0
+    c = _two_seasons_db((1, "Diego", "Q1", 9), (2, "Diego", None, 9))                           # même numéro : c'est lui
+    assert merge_split_players(c).merged == 1
+    c = _two_seasons_db((1, "Ibrahim Sangaré", "Q27832634", 7), (2, "Ibrahim Sangaré", "Q30122326", 7))
+    assert merge_split_players(c).merged == 0                                                   # deux QID : deux personnes
+    c = _two_seasons_db((1, "Luke Bell", None, None), (2, "Luke Bell", None, None))
+    c.execute("INSERT INTO player_birth VALUES (1, DATE '1990-01-01', 11), (2, DATE '1999-05-05', 11)")
+    assert merge_split_players(c).merged == 0                                                   # deux dates de naissance : deux personnes
+
+
+def test_split_players_with_a_gap_of_several_seasons_are_not_merged():
+    from openfootball.reconcile import merge_split_players
+    c = _two_seasons_db((1, "Luke Bell", "Q5", None), (2, "Luke Bell", None, None), year2=2024)
+    assert merge_split_players(c).merged == 0
+
+
+def test_audit_flags_dirty_names_non_players_and_duplicates_in_a_squad():
+    from openfootball.audit import run_audit
+    c = _squad([(1, "Matvey Safonov", "Q36371294", 39, "GK"), (2, "Matveï Safonov", None, 39, "GK"), (3, "Ibrahim Fofananote 2]", None, 5, None),
+                (4, "FRA", "Q244750", None, None)])
+    got = {(p.check, p.severity) for p in run_audit(c)}
+    assert {("squad_duplicate", "blocking"), ("name_artifact", "blocking"), ("not_a_player", "blocking")} <= got
+    from openfootball.reconcile import clean_player_names, merge_squad_duplicates, remove_non_players
+    clean_player_names(c); remove_non_players(c); merge_squad_duplicates(c)
+    assert not {p.check for p in run_audit(c)} & {"squad_duplicate", "name_artifact", "not_a_player"}
+
+
+def test_nicknames_markers_and_glued_categories_are_not_part_of_a_name():
+    from openfootball.names import clean_person_name as clean
+    cases = {'Antonio Rodríguez "Toño"': "Antonio Rodríguez", 'Victor "PC" Giro': "Victor Giro", "Patrick Lane|Patrick Lane": "Patrick Lane",
+             "Rafhinha [L": "Rafhinha", "Rodrigue Ele [S2": "Rodrigue Ele", "Iman AbaszadehU21": "Iman Abaszadeh", '"Dani" Mas': "Dani Mas"}
+    for dirty, good in cases.items():
+        assert clean(dirty) == good, dirty
+    assert clean('Pavlo M"jahkov') == 'Pavlo M"jahkov'                                  # une guillemet isolée n'est pas un surnom
+
+
+def test_dates_notes_and_lists_of_surnames_are_not_players():
+    from openfootball.parse.squad import looks_like_non_player as bad
+    for x in ("January 1, 2022", "December 31, 2021", "jan/2023", "In maart 2015 vertrokken", "Verhuurd, was verhuurd aan Go Ahead Eagles"):
+        assert bad(x), x
+    for x in ("Kylian Mbappé", "Leftwich", "Juan Carlos Ramón de la Cruz Torres"):
+        assert not bad(x), x
+    from openfootball.reconcile import remove_non_players
+    c = _squad([(1, "Schaars Slagveer Kums Başacıkoğlu Lurling Raitala", None, None, None), (2, "Juan Carlos Ramón de la Cruz", "Q1", 8, None)])
+    c.execute("INSERT INTO player_birth VALUES (2, DATE '1990-01-01', 11)")
+    assert remove_non_players(c) == 1                                                  # six mots sans lien : retiré ; la même longueur avec un QID reste
+    assert _names(c) == ["Juan Carlos Ramón de la Cruz"]
+
+
+def test_impossible_birth_dates_are_erased_and_orphan_players_removed():
+    from openfootball.audit import run_audit
+    from openfootball.reconcile import drop_impossible_births, orphan_player_ids, remove_orphan_players
+    c = _squad([(1, "Real Player", "Q1", 9, None)])
+    c.execute("INSERT INTO player (id, name, wikidata_qid) VALUES (2, 'Filippo Neri', 'Q217791')")
+    c.execute("INSERT INTO player_wikidata VALUES (2, 'Q217791')")
+    c.execute("INSERT INTO player_birth VALUES (2, DATE '1515-07-31', 11), (1, DATE '1990-03-03', 11)")
+    assert orphan_player_ids(c) == [2]
+    got = {(p.check, p.severity) for p in run_audit(c)}
+    assert ("birth_impossible", "blocking") in got and ("orphan_player", "warning") in got
+    assert drop_impossible_births(c) == 1 and remove_orphan_players(c) == 1
+    assert _names(c) == ["Real Player"]
+    assert c.execute("SELECT count(*) FROM player_birth").fetchone()[0] == 1
+    assert c.execute("SELECT count(*) FROM player_wikidata").fetchone()[0] == 1
+
+
+def test_parse_birth_ignores_a_date_nobody_in_a_squad_can_have():
+    from openfootball.enrich import parse_birth
+    rows = [{"p": "http://www.wikidata.org/entity/Q217791", "dob": "1515-07-31T00:00:00Z", "prec": "11"},
+            {"p": "http://www.wikidata.org/entity/Q1", "dob": "1990-03-03T00:00:00Z", "prec": "11"}]
+    assert list(parse_birth(rows)) == ["Q1"]
