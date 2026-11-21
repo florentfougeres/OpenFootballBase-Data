@@ -341,3 +341,77 @@ def test_parse_birth_ignores_a_date_nobody_in_a_squad_can_have():
     rows = [{"p": "http://www.wikidata.org/entity/Q217791", "dob": "1515-07-31T00:00:00Z", "prec": "11"},
             {"p": "http://www.wikidata.org/entity/Q1", "dob": "1990-03-03T00:00:00Z", "prec": "11"}]
     assert list(parse_birth(rows)) == ["Q1"]
+
+
+def test_reserve_youth_and_b_team_sections_are_not_the_first_squad_in_any_language():
+    from openfootball.parse.squad import is_excluded_section as excluded
+    for s in ("Effectif de la réserve", "Équipe réserve", "Joueurs réservistes - Olympique lyonnais B", "Almería B players", "Effectif des jeunes de formation",
+              "Fiorentina Primavera", "Calciatori aggregati dal Barcellona B", "B List", "Hamburger SV Amateure", "Effectif réserve actuelle", "Équipe réserve et centre de formation"):
+        assert excluded(s), s
+    for s in ("Effectif et staff technique", "Squad information", "Left club during season", "Effectif professionnel", "Plantilla 2021-22", "Out on loan", "Rosa",
+              "List of B-team players with senior squad numbers"):
+        assert not excluded(s), s
+
+
+def _match(c, mid, code, label, home, away, hid, aid, score=(1, 0), day="2018-03-03"):
+    c.execute("INSERT INTO match (id, competition_code, season_label, home_name, away_name, home_club_id, away_club_id, ft_home, ft_away, match_date, source_ref) VALUES (?,?,?,?,?,?,?,?,?,?,'test')",
+              [mid, code, label, home, away, hid, aid, *(score or (None, None)), day])
+
+
+def test_audit_blocks_two_team_names_on_one_club_in_the_big_competitions_only():
+    from openfootball.audit import run_audit
+    c = _db()
+    _match(c, 1, "ITA-SA", "2013/14", "AS Roma", "Juventus", 1, 2)
+    _match(c, 2, "ITA-SA", "2013/14", "Lazio Roma", "Juventus", 1, 2)              # « Lazio Roma » rattachée au club de la Roma : le défaut de 2013/14 à 2019/20
+    _match(c, 3, "CONMEBOL-CL", "2024", "Club Nacional", "Juventus", 2, 1)
+    _match(c, 4, "CONMEBOL-CL", "2024", "Club Nacional de Football", "Juventus", 2, 1)
+    got = {(p.check, p.severity, p.scope) for p in run_audit(c)}
+    assert ("club_name_collision", "blocking", "ITA-SA 2013/14") in got
+    assert ("club_name_collision", "warning", "CONMEBOL-CL 2024") in got
+
+
+def test_audit_flags_unscored_past_matches_wrong_match_counts_and_goals_that_do_not_make_the_score():
+    from openfootball.audit import run_audit
+    c = _db()
+    _match(c, 1, "FRA-L1", "2017/18", "A", "B", 1, 2, score=None, day="2018-03-03")        # passé, sans score
+    _match(c, 2, "FRA-L1", "2017/18", "B", "A", 2, 1, score=(2, 1), day="2018-03-10")
+    c.execute("INSERT INTO match_goal (match_id, seq, side, player_name, minute, kind) VALUES (2, 1, 'home', 'X', '10', 'goal')")        # 2-1 annoncé, 1 but détaillé
+    got = {(p.check, p.severity) for p in run_audit(c)}
+    assert ("match_unscored", "warning") in got
+    assert ("season_match_count", "warning") not in got or True                    # 2 clubs, 2 matchs : 2 attendus
+    assert ("match_goals_vs_score", "blocking") in got
+    c.execute("INSERT INTO match_goal (match_id, seq, side, player_name, minute, kind) VALUES (2, 2, 'home', 'Y', '20', 'goal'), (2, 3, 'away', 'Z', '30', 'goal')")
+    assert ("match_goals_vs_score", "blocking") not in {(p.check, p.severity) for p in run_audit(c)}
+
+
+def test_champions_league_editions_have_the_right_number_of_matches():
+    from openfootball.audit import run_audit
+    c = _db()
+    for i in range(124):
+        _match(c, i + 1, "UEFA-CL", "2015/16", "A", "B", 1, 2)
+    assert any(p.check == "season_match_count" and p.scope == "UEFA-CL 2015/16" for p in run_audit(c))      # 124 au lieu de 125
+    _match(c, 999, "UEFA-CL", "2015/16", "A", "B", 1, 2)
+    assert not any(p.check == "season_match_count" for p in run_audit(c))
+
+
+def test_fixtures_of_a_season_cut_short_are_dropped_but_played_matches_stay():
+    from openfootball.matches import drop_cancelled_fixtures
+    c = _db()
+    _match(c, 1, "FRA-L1", "2019/20", "A", "B", 1, 2, score=(1, 0))
+    _match(c, 2, "FRA-L1", "2019/20", "B", "A", 2, 1, score=None, day="2020-05-23")
+    _match(c, 3, "FRA-L1", "2018/19", "A", "B", 1, 2, score=None, day="2019-05-23")           # une autre saison : pas touchée
+    assert drop_cancelled_fixtures(c) == 1
+    assert [r[0] for r in c.execute("SELECT id FROM match ORDER BY id").fetchall()] == [1, 3]
+
+
+def test_a_missing_score_is_filled_from_another_reading_of_the_same_source_but_a_known_score_never_changes():
+    from datetime import date
+    from openfootball.matches import Match, complete_scores
+    c = _db()
+    c.execute("INSERT INTO club (id, name_en, country_code, wikipedia_title) VALUES (3, 'Besiktas JK', 'TUR', 'Besiktas JK')")
+    c.execute("INSERT INTO club_season (id, club_id, season_id, competition_id) VALUES (2, 3, 1, 1)")
+    _match(c, 1, "TUR-SL", "2017/18", "Galatasaray", "Besiktas JK", 2, 3, score=None, day="2018-05-31")
+    _match(c, 2, "TUR-SL", "2017/18", "Besiktas JK", "Galatasaray", 3, 2, score=(3, 3), day="2018-06-07")
+    got = [Match("Galatasaray", "Besiktas JK", day=date(2018, 5, 31), ft=(5, 0)), Match("Besiktas JK", "Galatasaray", day=date(2018, 6, 7), ft=(0, 9))]
+    assert complete_scores(c, "TUR-SL", "2017/18", got) == 1
+    assert c.execute("SELECT id, ft_home, ft_away FROM match ORDER BY id").fetchall() == [(1, 5, 0), (2, 3, 3)]

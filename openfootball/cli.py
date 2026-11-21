@@ -12,8 +12,8 @@ from openfootball.audit import run_audit
 from openfootball.backfill import run_backfill
 from openfootball.coaches import import_coaches
 from openfootball.playersdata import import_players
-from openfootball.wikiresults import import_wikipedia_results
-from openfootball.matches import OpenFootballClient, import_full, import_leagues, import_tournaments, import_txt_repos, link_match_players, purge_unseen
+from openfootball.wikiresults import LEAGUES as WIKI_LEAGUES, import_wikipedia_results
+from openfootball.matches import OpenFootballClient, current_start_year, drop_cancelled_fixtures, import_full, import_leagues, import_tournaments, import_txt_repos, link_match_players, purge_unseen
 from openfootball.checks import run_checks
 from openfootball.db import connect, migrate
 from openfootball.enrich import add_career_clubs, enrich_match_competition_logos, enrich_player_photos, enrich_birth_dates, enrich_career_clubs, enrich_context_labels, enrich_league_logos, enrich_logos, enrich_wiki_links
@@ -711,8 +711,17 @@ def matches_cmd(args: argparse.Namespace) -> int:
         done |= import_tournaments(con, client)
         import_full(con, client)                       # après les championnats : ils recréent les matchs, donc leur détail
         done |= import_txt_repos(con, client, already=set(done))
+        langs = ("en", "fr", "es")
+        # saisons passées d'abord, depuis le cache (elles ne changent plus) : clients créés AVANT le mode « frais », qui est lu à la création
+        past = {k: v for k, v in WIKI_LEAGUES.items() if k in ("ENG-PL", "ITA-SA", "DEU-BL", "ESP-LL", "FRA-L1")}
+        os.environ.pop("OPENFOOTBALL_FRESH", None)
+        import_wikipedia_results(con, {l: WikipediaClient(f"cache/wikipedia_results_{l}", lang=l) for l in langs}, leagues=past,
+                                 years=list(range(max(args.since, 2010), current_start_year())))      # les cinq premières divisions : seconde source, trous comblés, désaccords signalés
         os.environ["OPENFOOTBALL_FRESH"] = "1"                         # les pages de résultats changent chaque jour : toujours relues
-        import_wikipedia_results(con, {l: WikipediaClient(f"cache/wikipedia_results_{l}", lang=l) for l in ("en", "fr", "es")})        # saison en cours : complète OpenFootball (en retard)
+        import_wikipedia_results(con, {l: WikipediaClient(f"cache/wikipedia_results_{l}", lang=l) for l in langs})        # saison en cours : complète OpenFootball (en retard)
+        dropped = drop_cancelled_fixtures(con)
+        if dropped:
+            print(f"  {dropped} matchs du calendrier jamais joués retirés (saisons arrêtées)")
         purged = purge_unseen(con, {k.split(" ")[0] for k in done})
         if purged:
             print(f"  {purged} compétitions OF:* retirées (plus de fichier source, ou rattachées à une compétition à nous)")

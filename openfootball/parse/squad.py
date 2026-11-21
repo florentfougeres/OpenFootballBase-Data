@@ -46,6 +46,7 @@ _REGION_END = re.compile(
     r"coaching staff|management)\b", re.I)
 _EXCLUDED_SECTION = re.compile(
     r"reserve|academy|youth|under-?\d|u-?\d{2}|b team|filial|cantera|juvenil|\bII$|"
+    r"r[eé]serv|primavera|amateure|jeunes de formation|centre de formation|settore giovanile|^[\w .'-]+ B players$|^(?:b list|list b)$|aggregati dal .* B$|"     # réserve, formation, B : pas l'équipe première
     r"coaching staff|^staff\b|managerial|^management|"
     r"^goals?$|goalscorers?|top scor|assists?|disciplin|suspensions?|sanctions?|contract|award|clean sheet|hat-?trick|player of the|"
     r"most appearances|top \d+|top minutes|all[- ]time|retired numbers?|records?|hall of fame|legends|"             # tableaux de records de la page d'un club : des légendes, pas l'effectif

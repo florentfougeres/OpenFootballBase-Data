@@ -37,6 +37,9 @@ LEAGUES: dict[str, list[tuple[str, str]]] = {
     "FRA-L1": [("fr", "Championnat de France de football {y}-{Y}")],
 }
 
+# Pages de repli, lues seulement quand les pages de `LEAGUES` n'ont aucune matrice : la page française de Ligue 1 n'en a pas pour 2010/11 à 2016/17, 2021/22 et 2023/24 (la page anglaise, si).
+FALLBACK: dict[str, list[tuple[str, str]]] = {"FRA-L1": [("en", "{y}–{yy} Ligue 1")]}
+
 _NAME = re.compile(r"\|\s*(?:name|nombre)_([A-Za-z0-9]+)\s*=\s*([^\n]*)")
 _LINK = re.compile(r"\[\[([^\]|#]+)(?:\|([^\]]*))?\]\]")
 _MATCH = re.compile(r"\|\s*(?:match|partido)_([A-Za-z0-9]+)_([A-Za-z0-9]+)\s*=\s*((?:\[\[[^\]]*\]\]|[^\n|])*)")      # le score peut être un lien : [[Derbi madrileño|2-1]]
@@ -120,7 +123,7 @@ def apply_results(con: duckdb.DuckDBPyConnection, code: str, label: str, names: 
         if hid is None or aid is None:
             continue
         label_m = f"{code} {label} {names[m.home][1]} – {names[m.away][1]}"
-        if abs(m.ft[0] - m.ft[1]) >= SUSPECT_MARGIN:                                     # invraisemblable : écarté, même si OpenFootball n'a rien (s'il a le même score, il le portera lui-même)
+        if abs(m.ft[0] - m.ft[1]) >= SUSPECT_MARGIN and label == season_label(current_start_year(today)):      # invraisemblable sur la saison en cours (éditée à la main) : écarté ; une saison passée est relue et corrigée depuis longtemps (Barcelone 8-0)
             report.skipped.append(f"{label_m} : score {m.ft[0]}-{m.ft[1]} invraisemblable (écart d'au moins {SUSPECT_MARGIN} buts), non repris")
             continue
         row = con.execute("SELECT id, ft_home, ft_away, match_date FROM match WHERE competition_code = ? AND season_label = ? AND home_club_id = ? AND away_club_id = ?",
@@ -146,26 +149,38 @@ def apply_results(con: duckdb.DuckDBPyConnection, code: str, label: str, names: 
 
 
 def import_wikipedia_results(con: duckdb.DuckDBPyConnection, wps: dict, *, leagues: dict[str, list[tuple[str, str]]] | None = None,
-                             log_fn: Callable[[str], None] = print) -> dict[str, Report]:
-    """Saison en cours des championnats de `LEAGUES`. `wps` : {langue: WikipediaClient} relisant les pages à chaque passage. À lancer APRÈS les imports
-    OpenFootball (ils recréent les matchs). Une page absente (saison pas encore créée) ou sans matrice est signalée, jamais fatale."""
-    year = current_start_year()
+                             log_fn: Callable[[str], None] = print, years: list[int] | None = None) -> dict[str, Report]:
+    """Saison en cours (ou les saisons `years`, par leur année de début) des championnats de `LEAGUES`. `wps` : {langue: WikipediaClient} relisant les pages à chaque
+    passage. À lancer APRÈS les imports OpenFootball (ils recréent les matchs). Une page absente (saison pas encore créée) ou sans matrice est signalée, jamais fatale.
+    Sur une saison passée la matrice sert de seconde source : elle complète les matchs que la première n'a pas et signale chaque désaccord de score."""
+    out: dict[str, Report] = {}
+    for year in years or [current_start_year()]:
+        out.update({f"{k} {season_label(year)}" if years else k: v for k, v in _import_season(con, wps, year, leagues, log_fn).items()})
+    return out
+
+
+def _import_season(con, wps: dict, year: int, leagues, log_fn) -> dict[str, Report]:
     label = season_label(year)
     out: dict[str, Report] = {}
     for code, pages in (leagues or LEAGUES).items():
         names: dict[str, tuple[str, str]] = {}
         matches: dict[tuple[str, str], WikiMatch] = {}
         titles = [(lang, p.format(y=year, yy=str(year + 1)[2:], Y=year + 1)) for lang, p in pages]
-        for lang, title in titles:
-            if lang not in wps:
-                continue
-            (page,) = wps[lang].get_pages([title])
-            if not page.exists or not page.wikitext:
-                continue
-            n, ms = parse_matrix(page.wikitext)
-            for k, v in n.items():
-                names.setdefault(k, v)
-            matches.update({(m.home, m.away): m for m in ms})
+        for attempt in (titles, [(lang, p.format(y=year, yy=str(year + 1)[2:], Y=year + 1)) for lang, p in FALLBACK.get(code, [])]):
+            for lang, title in attempt:
+                if lang not in wps:
+                    continue
+                (page,) = wps[lang].get_pages([title])
+                if not page.exists or not page.wikitext:
+                    continue
+                n, ms = parse_matrix(page.wikitext)
+                for k, v in n.items():
+                    names.setdefault(k, v)
+                matches.update({(m.home, m.away): m for m in ms})
+            if matches:                                  # le repli ne sert que si les pages principales n'ont donné aucune matrice
+                if attempt is not titles:
+                    titles = attempt
+                break
         if not matches:
             log_fn(f"  {code} {label} : aucune matrice de résultats lue ({', '.join(t for _, t in titles)})")
             continue

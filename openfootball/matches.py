@@ -165,13 +165,13 @@ def parse_football_json(payload: dict, ref: str) -> list[Match]:
 # --------------------------------------------------------------------------------------------------
 # Rapprochement des noms d'équipes avec nos clubs
 
-_STOP = {"afc", "fc", "cf", "ac", "sc", "the", "fk", "sk", "if", "bk", "sv", "ssc", "as", "us", "rc", "cd", "ud", "de", "la", "le", "del", "di", "da", "do", "club", "rcd"}
+_STOP = {"afc", "fc", "cf", "ac", "sc", "the", "fk", "sk", "if", "bk", "sv", "ssc", "ss", "as", "us", "rc", "cd", "ud", "de", "la", "le", "del", "di", "da", "do", "club", "rcd"}
 
 
 def norm(text: str) -> str:
-    """« Brighton & Hove Albion FC » et « Brighton & Hove Albion F.C. » donnent la même clé."""
+    """« Brighton & Hove Albion FC » et « Brighton & Hove Albion F.C. » donnent la même clé. Une étiquette de statut (`[cancelled]`) n'est pas dans le nom."""
     s = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode().lower().replace("&", " and ").replace(".", "")
-    s = re.sub(r"\(.*?\)", " ", s)
+    s = re.sub(r"\(.*?\)|\[.*?\]", " ", s)
     return " ".join(w for w in re.sub(r"[^a-z0-9]+", " ", s).split() if w not in _STOP)
 
 
@@ -214,7 +214,11 @@ CLUB_ALIASES: dict[str, str] = {
     "FC Barcelona B": "FC Barcelona Atlètic", "SM Caen": "Stade Malherbe Caen", "EA Guingamp": "En Avant de Guingamp",
     "Aris Saloniki": "Aris Thessaloniki F.C.", "AEK Athen": "AEK Athens F.C.", "OFI Heraklion": "OFI Crete F.C.",
     "AE Lárissa": "Athlitiki Enosi Larissa F.C.", "GS Kallithea": "Athens Kallithea F.C.", "AE Kifisias": "A.E. Kifisia F.C.",
-    "Chievo Verona": "AC ChievoVerona", "Trapani Calcio": "FC Trapani 1905", "Ascoli Picchio FC": "Ascoli Calcio 1898 FC",
+    "Chievo Verona": "AC ChievoVerona", "Lazio Roma": "SS Lazio", "Crvena Zvezda": "Red Star Belgrade", "FK Crvena Zvezda": "Red Star Belgrade",
+    # Matrice des résultats de la page française de Ligue 1 : les équipes y portent un titre long ou un sigle
+    "Angers sporting club de l'Ouest": "Angers SCO", "SCO": "Angers SCO", "Stade Malherbe Caen Calvados Basse-Normandie": "Stade Malherbe Caen",
+    "LOSC Lille Association": "Lille OSC", "LOSC": "Lille OSC", "Association sportive de Monaco football club": "AS Monaco FC",
+    "Olympique Gymnaste Club Nice": "OGC Nice", "OGCN": "OGC Nice", "Stade rennais football club": "Stade Rennais F.C.", "Trapani Calcio": "FC Trapani 1905", "Ascoli Picchio FC": "Ascoli Calcio 1898 FC",
     "Vicenza Calcio": "LR Vicenza", "Como Calcio": "Como 1907", "Raja Casablanca": "Raja CA", "Maghrib de Fès": "Maghreb Fez",
     "Gallos Blancos": "Querétaro F.C.", "Monarcas Morelia": "Atlético Morelia", "SBV Excelsior": "Excelsior Rotterdam", "PSV": "PSV Eindhoven",
     "NEC": "NEC Nijmegen", "AVS": "AVS Futebol SAD", "CSKA Moskva": "PFC CSKA Moscow", "Zenit St. Petersburg": "FC Zenit Saint Petersburg",
@@ -232,6 +236,22 @@ def resolve_club(index: dict[str, int], team: str) -> int | None:
     found = {cid for k, cid in index.items() if words and (words <= set(k.split()) or set(k.split()) <= words)
              and any(len(w) >= 4 for w in words & set(k.split()))}
     return found.pop() if len(found) == 1 else None
+
+
+def resolve_teams(index: dict[str, int], teams: set[str]) -> dict[str, int | None]:
+    """Club de chaque nom d'équipe d'une compétition-saison, sans qu'un même club serve deux équipes : « Lazio Roma » n'est pas l'AS Roma parce que « Roma » en est
+    un morceau. Un nom reconnu tel quel garde son club ; un nom rapproché par ses mots (`resolve_club`) qui tomberait sur un club déjà pris par un autre nom, ou que
+    deux noms rapprochés se disputeraient, reste sans club (rapporté) plutôt que faux."""
+    out: dict[str, int | None] = {t: index[norm(t)] for t in teams if norm(t) in index}
+    taken = set(out.values())
+    fuzzy = {t: resolve_club(index, t) for t in teams if t not in out}
+    count: dict[int, int] = {}
+    for cid in fuzzy.values():
+        if cid is not None:
+            count[cid] = count.get(cid, 0) + 1
+    for t, cid in fuzzy.items():
+        out[t] = cid if cid is not None and cid not in taken and count[cid] == 1 else None
+    return out
 
 
 # --------------------------------------------------------------------------------------------------
@@ -254,8 +274,9 @@ def write_matches(con: duckdb.DuckDBPyConnection, code: str, label: str, matches
         for child in ("match_goal", "match_lineup", "match_card", "match_result_source"):
             con.execute(f"DELETE FROM {child} WHERE match_id IN (SELECT id FROM match WHERE competition_code = ? AND season_label = ?)", [code, label])
         con.execute("DELETE FROM match WHERE competition_code = ? AND season_label = ?", [code, label])
+        resolved = resolve_teams(index, {t for m in matches for t in (m.home, m.away)}) if index else {}
         for m in matches:
-            hid, aid = resolve_club(index, m.home), resolve_club(index, m.away)
+            hid, aid = resolved.get(m.home), resolved.get(m.away)
             if hid is None and index:
                 report.unmatched.add(m.home)
             if aid is None and index:
@@ -280,6 +301,21 @@ def write_matches(con: duckdb.DuckDBPyConnection, code: str, label: str, matches
 
 # --------------------------------------------------------------------------------------------------
 # Import des championnats (football.json)
+
+CANCELLED_SEASONS = {("FRA-L1", "2019/20")}        # saison arrêtée par la pandémie : les matchs du calendrier qui n'ont jamais été joués ne sont pas des matchs « à venir »
+
+
+def drop_cancelled_fixtures(con: duckdb.DuckDBPyConnection) -> int:
+    """Retire les matchs sans score des saisons de `CANCELLED_SEASONS` (Ligue 1 2019/20 : 101 matchs de la 29e à la 38e journée, jamais joués). Rend leur nombre."""
+    n = 0
+    for code, label in CANCELLED_SEASONS:
+        ids = [r[0] for r in con.execute("SELECT id FROM match WHERE competition_code = ? AND season_label = ? AND ft_home IS NULL", [code, label]).fetchall()]
+        for child in ("match_goal", "match_lineup", "match_card", "match_result_source"):
+            con.execute(f"DELETE FROM {child} WHERE match_id IN (SELECT unnest(?))", [ids])
+        con.execute("DELETE FROM match WHERE id IN (SELECT unnest(?))", [ids])
+        n += len(ids)
+    return n
+
 
 def competition_title(raw: str | None) -> str | None:
     """« FIFA World Cup 2022 » -> « FIFA World Cup » ; « Algeria | Ligue 1 2024/25 » -> « Algeria | Ligue 1 » ; « Copa América 2024  # in USA » -> « Copa América »."""
@@ -417,8 +453,14 @@ def _parse_lineup(side: str, text: str) -> list[tuple[str, str, str, str | None,
         if not m:
             continue
         out.append((side, m["name"].strip(), "start", m["min"], bool(m["cap"])))      # titulaire (minute = sa sortie s'il est remplacé)
-        if m["sub"]:
-            out.append((side, m["sub"].strip(), "sub", m["min"], False))
+        sub, minute = m["sub"], m["min"]
+        while sub:                                                                   # un remplaçant remplacé à son tour : « Goiginger (90+3' Fofana) »
+            inner = _PLAYER.match(sub.strip())
+            if not inner:
+                out.append((side, sub.strip(), "sub", minute, False))
+                break
+            out.append((side, inner["name"].strip(), "sub", minute, False))
+            sub, minute = inner["sub"], inner["min"]
     return out
 
 
@@ -647,6 +689,8 @@ def _txt_target(repo: str, path: str) -> tuple[str, str, int, Callable] | None:
     name = path.rsplit("/", 1)[-1]
     if repo == "club-worldcup" and (m := re.fullmatch(r"(\d{4})/clubworldcup\.txt", path)):
         return "FIFA-CWC", m[1], int(m[1]), parse_txt_timed
+    if repo == "champions-league" and (m := re.fullmatch(r"(\d{4})-(\d{2})/cl\.txt", path)) and int(m[1]) >= 2010:         # les saisons que football.json n'a pas (2020/21 à 2023/24, 2025/26)
+        return "UEFA-CL", f"{m[1]}/{m[2]}", int(m[1]), parse_txt_timed
     if repo == "south-america" and (m := re.fullmatch(r"copa-libertadores/(\d{4})_(copal|copas)\.txt", path)):
         return ("CONMEBOL-CL" if m[2] == "copal" else "OF:copa-sudamericana"), m[1], int(m[1]), parse_txt_timed
     if repo == "world" and (m := re.fullmatch(r"(\d{4})(?:-(\d{2}))?_([\w.-]+)\.txt", name)) and path.count("/") >= 1 and "attic" not in path:
@@ -656,12 +700,32 @@ def _txt_target(repo: str, path: str) -> tuple[str, str, int, Callable] | None:
     return None
 
 
+def complete_scores(con: duckdb.DuckDBPyConnection, code: str, label: str, matches: list[Match]) -> int:
+    """Donne leur score aux matchs d'une compétition-saison déjà lue qui n'en ont pas, d'après une autre lecture de la même source (même club à domicile, même club à
+    l'extérieur, même jour quand les deux le connaissent). Ne change jamais un score existant. Rend le nombre de matchs complétés."""
+    index = _club_index(con, code, label)
+    resolved = resolve_teams(index, {t for m in matches for t in (m.home, m.away)}) if index else {}
+    done = 0
+    for m in matches:
+        hid, aid = resolved.get(m.home), resolved.get(m.away)
+        if m.ft is None or hid is None or aid is None:
+            continue
+        row = con.execute("""SELECT id FROM match WHERE competition_code = ? AND season_label = ? AND home_club_id = ? AND away_club_id = ? AND ft_home IS NULL
+                             AND (match_date IS NULL OR ?::DATE IS NULL OR match_date = ?::DATE)""", [code, label, hid, aid, m.day, m.day]).fetchone()
+        if row:
+            con.execute("UPDATE match SET ft_home = ?, ft_away = ?, ht_home = coalesce(ht_home, ?), ht_away = coalesce(ht_away, ?), et_home = coalesce(et_home, ?), et_away = coalesce(et_away, ?),"
+                        " pen_home = coalesce(pen_home, ?), pen_away = coalesce(pen_away, ?) WHERE id = ?",
+                        [*m.ft, *(m.ht or (None, None)), *(m.et or (None, None)), *(m.pen or (None, None)), row[0]])
+            done += 1
+    return done
+
+
 def import_txt_repos(con: duckdb.DuckDBPyConnection, client: OpenFootballClient, *, repos: list[str] | None = None, fresh_from: int | None = None,
                      already: set[str] = frozenset(), log_fn: Callable[[str], None] = print) -> dict[str, WriteReport]:
     """Coupe du monde des clubs, Copa Libertadores et Sudamericana, championnats de `world`, matchs de sélections de `internationals`."""
     fresh_from = fresh_from if fresh_from is not None else date.today().year - 1
     done: dict[str, WriteReport] = {}
-    for repo in repos or ["club-worldcup", "south-america", "world", "internationals"]:
+    for repo in repos or ["champions-league", "club-worldcup", "south-america", "world", "internationals"]:
         n = 0
         for path in _tree(client, repo):
             target = _txt_target(repo, path)
@@ -669,6 +733,11 @@ def import_txt_repos(con: duckdb.DuckDBPyConnection, client: OpenFootballClient,
                 continue
             code, label, year, reader = target
             if f"{code} {label}" in already:               # déjà lu dans une source plus complète pour cette saison (football.json) : on ne l'écrase pas
+                if code == "UEFA-CL":                      # mais on y prend les scores qu'elle n'a pas (la finale 2024/25 n'y a pas le sien)
+                    text = client.get(f"{RAW}/{repo}/master/{path}", fresh=year >= fresh_from)
+                    filled = complete_scores(con, code, label, reader(text, year, f"{repo}/{path}", "/" in label) if text else [])
+                    if filled:
+                        log_fn(f"  {code} {label} : {filled} score(s) complété(s) depuis {repo}")
                 continue
             text = client.get(f"{RAW}/{repo}/master/{path}", fresh=year >= fresh_from)
             matches = reader(text, year, f"{repo}/{path}", "/" in label) if text else []
@@ -696,16 +765,27 @@ def purge_unseen(con: duckdb.DuckDBPyConnection, seen: set[str]) -> int:
 
 def _tokens(name: str) -> frozenset[str]:
     from openfootball.names import fold            # import local : names n'a pas besoin d'être chargé pour lire un fichier
-    return frozenset(re.sub(r"[^a-z0-9]+", " ", fold(name)).split())
+    text = re.sub(r"['’`]", "", fold(name))                                       # « O'Reilly » = « OReilly »
+    return frozenset(re.sub(r"[^a-z0-9]+", " ", re.sub(r"([aou])e", r"\1", text)).split())      # « Fuehrich » (sans tréma) = « Führich » (tréma retiré par `fold`)
+
+
+def _letters(tokens: frozenset[str]) -> str:
+    """Les lettres du nom, triées : « LEE Jaesung » (ordre coréen) = « Lee Jae-sung »."""
+    return "".join(sorted("".join(tokens)))
 
 
 def pick_player(squad: list[tuple[int, frozenset[str]]], name: str) -> int | None:
-    """Mêmes mots (la casse et les accents ne comptent pas) ; sinon les mots de l'un contenus dans ceux de l'autre (« Smith Rowe » / « Emile Smith Rowe »,
-    « Alisson » / « Alisson Becker »). Un seul joueur doit répondre à un niveau, sinon aucun lien."""
+    """Mêmes mots (la casse et les accents ne comptent pas) ; sinon les mêmes lettres (ordre ou tiret différent) ; sinon les mots de l'un contenus dans ceux de l'autre
+    (« Smith Rowe » / « Emile Smith Rowe », « Alisson » / « Alisson Becker ») ; sinon une initiale et un nom (« S. Esposito » / « Sebastiano Esposito »).
+    Un seul joueur doit répondre à un niveau, sinon aucun lien."""
     toks = _tokens(name)
     if not toks:
         return None
-    for level in (lambda p: p == toks, lambda p: toks <= p or (p <= toks and bool(p))):
+    letters = _letters(toks)
+    inits = {t for t in toks if len(t) == 1}
+    rest = toks - inits
+    for level in (lambda p: p == toks, lambda p: _letters(p) == letters, lambda p: toks <= p or (p <= toks and bool(p)),
+                  lambda p: bool(inits and rest) and rest <= p and all(any(w.startswith(i) for w in p - rest) for i in inits)):
         found = {pid for pid, p in squad if level(p)}
         if len(found) == 1:
             return found.pop()
@@ -722,9 +802,11 @@ def link_match_players(con: duckdb.DuckDBPyConnection, log_fn: Callable[[str], N
     def squad(club_id: int, label: str):
         key = (club_id, label)
         if key not in squads:
-            squads[key] = [(pid, _tokens(name)) for pid, name in con.execute(
-                """SELECT p.id, p.name FROM player_club_season pcs JOIN club_season cs ON cs.id = pcs.club_season_id JOIN season s ON s.id = cs.season_id
-                   JOIN player p ON p.id = pcs.player_id WHERE cs.club_id = ? AND s.label = ?""", key).fetchall()]
+            rows = con.execute(
+                """SELECT p.id, p.name, p.link_title FROM player_club_season pcs JOIN club_season cs ON cs.id = pcs.club_season_id JOIN season s ON s.id = cs.season_id
+                   JOIN player p ON p.id = pcs.player_id WHERE cs.club_id = ? AND s.label = ?""", key).fetchall()
+            # le nom de la page Wikipedia vaut aussi : l'effectif écrit « Fede Valverde », la source de matchs « Federico Valverde »
+            squads[key] = [(pid, _tokens(n)) for pid, name, title in rows for n in {name, re.sub(r"\s*\([^)]*\)$", "", title or name)}]
         return squads[key]
 
     linked = {}

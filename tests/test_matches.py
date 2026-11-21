@@ -255,3 +255,43 @@ def test_annee_d_un_tournoi_liste_par_groupe_et_passage_du_nouvel_an():
     assert [m.day.isoformat() for m in (a, b, c)] == ["2020-03-03", "2020-12-09", "2020-03-10"]          # décembre puis mars : toujours 2020
     ny = parse_txt_timed("▪ Final stage\n  Sat Dec 30 2023\n    21:00  A v B   1-1\n  Sat Jan 13\n    21:00  C v D   2-0\n", 2023, "x")
     assert [m.day.isoformat() for m in ny] == ["2023-12-30", "2024-01-13"]                                  # le Nouvel An passe une fois
+
+
+def test_a_substitute_who_is_replaced_in_turn_is_two_players_not_one_name():
+    from openfootball.matches import _parse_lineup
+    got = _parse_lineup("home", "Keeper, Starter (76' Thomas Goiginger (90+3' Mamadou Fofana))")
+    assert [(r[1], r[2], r[3]) for r in got] == [("Keeper", "start", None), ("Starter", "start", "76"), ("Thomas Goiginger", "sub", "76"), ("Mamadou Fofana", "sub", "90+3")]
+
+
+def test_goal_scorer_names_match_the_squad_despite_umlauts_apostrophes_initials_and_name_order():
+    from openfootball.matches import _tokens, pick_player
+    squad = [(1, _tokens("Chris Führich")), (2, _tokens("Nico O'Reilly")), (3, _tokens("Lee Jae-sung")), (4, _tokens("Sebastiano Esposito")),
+             (5, _tokens("Salvatore Esposito")), (6, _tokens("Grischa Prömel"))]
+    assert pick_player(squad, "Chris FUEHRICH") == 1
+    assert pick_player(squad, "Nico OREILLY") == 2
+    assert pick_player(squad, "LEE Jaesung") == 3
+    assert pick_player(squad, "S. Esposito") is None                    # deux Esposito dans l'effectif : pas de lien plutôt qu'un mauvais
+    assert pick_player(squad[:4], "S. Esposito") == 4
+    assert pick_player(squad, "Grischa PROEMEL") == 6
+
+
+def test_a_team_name_that_contains_another_clubs_name_does_not_take_that_club():
+    from openfootball.matches import norm, resolve_teams
+    index = {norm("AS Roma"): 1, norm("SS Lazio"): 2, norm("Juventus FC"): 3}
+    got = resolve_teams(index, {"AS Roma", "Lazio Roma", "Juventus"})
+    assert got["AS Roma"] == 1 and got["Juventus"] == 3
+    assert got["Lazio Roma"] is None                                   # « roma » est un morceau de « Lazio Roma » : l'AS Roma est déjà pris par son vrai nom
+    index[norm("Lazio Roma")] = 2                                       # l'alias règle le cas
+    assert resolve_teams(index, {"AS Roma", "Lazio Roma"}) == {"AS Roma": 1, "Lazio Roma": 2}
+
+
+def test_two_fuzzy_names_for_the_same_club_are_both_left_without_club():
+    from openfootball.matches import norm, resolve_teams
+    index = {norm("Real Betis"): 7}
+    got = resolve_teams(index, {"Real Betis Sevilla", "Real Betis Balompie"})
+    assert got == {"Real Betis Sevilla": None, "Real Betis Balompie": None}
+
+
+def test_status_tags_are_not_part_of_a_team_name():
+    from openfootball.matches import norm
+    assert norm("Colorado Rapids           [cancelled]") == norm("Colorado Rapids") and norm("SS Lazio") == norm("Lazio")

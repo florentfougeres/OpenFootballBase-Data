@@ -72,8 +72,49 @@ def _identity_problems(con: duckdb.DuckDBPyConnection) -> list[Problem]:
     return out
 
 
+BIG_COMPETITIONS = ("ENG-PL", "ESP-LL", "ITA-SA", "DEU-BL", "FRA-L1", "UEFA-CL")      # les cinq premières divisions et la Ligue des champions : exigence maximale
+CHAMPIONS_LEAGUE_MATCHES = {"2019/20": 119}          # 125 matchs par saison (96 de poules + 29 de phase finale) ; 119 en 2019/20 (phase finale à partir des huitièmes en match unique) ; 189 depuis 2024/25
+CHAMPIONS_LEAGUE_NEW_FORMAT = 2024
+
+
+def _match_problems(con: duckdb.DuckDBPyConnection) -> list[Problem]:
+    """Qualité des résultats : un club pour un seul nom d'équipe, des scores partout, le bon nombre de matchs, des buts qui font le score."""
+    out: list[Problem] = []
+    names = con.execute("""WITH t AS (SELECT competition_code c, season_label s, home_club_id cid, home_name n FROM match WHERE home_club_id IS NOT NULL
+                           UNION SELECT competition_code, season_label, away_club_id, away_name FROM match WHERE away_club_id IS NOT NULL)
+                           SELECT c, s, cid, list(DISTINCT n) FROM t GROUP BY ALL""").fetchall()
+    from openfootball.matches import norm
+    clash = [(f"{c} {s}", " | ".join(sorted(ns)) + " : un seul club pour plusieurs équipes") for c, s, _, ns in names if len({norm(n) for n in ns}) > 1]
+    out += _listed("club_name_collision", "blocking", [x for x in clash if x[0].split()[0] in BIG_COMPETITIONS], "équipes distinctes rattachées au même club")
+    out += _listed("club_name_collision", "warning", [x for x in clash if x[0].split()[0] not in BIG_COMPETITIONS], "équipes distinctes rattachées au même club (autres compétitions)")
+
+    big = ",".join(f"'{c}'" for c in BIG_COMPETITIONS)
+    out += _scan(con, "match_unscored", "warning", f"""
+        SELECT competition_code || ' ' || season_label || ' ' || match_date, home_name || ' – ' || away_name || ' : match passé sans score'
+        FROM match WHERE ft_home IS NULL AND match_date < current_date - 1 AND competition_code IN ({big}) ORDER BY match_date""",
+                 "matchs passés sans score (les compléter, ou les retirer si la saison a été arrêtée)")
+
+    d1 = con.execute(f"""SELECT competition_code, season_label, count(*) n, count(DISTINCT home_club_id) teams FROM match
+                         WHERE competition_code IN ({big}) AND competition_code <> 'UEFA-CL' AND home_club_id IS NOT NULL GROUP BY ALL""").fetchall()
+    this_season = date.today().year if date.today().month >= 7 else date.today().year - 1
+    wrong = [(f"{c} {s}", f"{n} matchs pour {t} clubs : {t * (t - 1)} attendus") for c, s, n, t in d1
+             if int(s[:4]) < this_season and n != t * (t - 1) and not (c == "FRA-L1" and s == "2019/20")]
+    out += _listed("season_match_count", "warning", wrong, "saisons dont le nombre de matchs n'est pas celui d'un championnat complet")
+    ucl = con.execute("SELECT season_label, count(*) FROM match WHERE competition_code = 'UEFA-CL' GROUP BY 1").fetchall()
+    expected = lambda s: CHAMPIONS_LEAGUE_MATCHES.get(s, 189 if int(s[:4]) >= CHAMPIONS_LEAGUE_NEW_FORMAT else 125)
+    out += _listed("season_match_count", "warning", [(f"UEFA-CL {s}", f"{n} matchs : {expected(s)} attendus") for s, n in ucl if int(s[:4]) < this_season and n != expected(s)],
+                   "éditions de la Ligue des champions dont le nombre de matchs n'est pas le bon")
+
+    out += _scan(con, "match_goals_vs_score", "blocking", f"""
+        WITH g AS (SELECT match_id, sum((side = 'home')::INT) gh, sum((side = 'away')::INT) ga FROM match_goal GROUP BY 1)
+        SELECT m.competition_code || ' ' || m.season_label || ' ' || m.match_date, m.home_name || ' ' || m.ft_home || '-' || m.ft_away || ' ' || m.away_name || ' : ' || g.gh || '-' || g.ga || ' buts détaillés'
+        FROM match m JOIN g ON g.match_id = m.id WHERE m.ft_home IS NOT NULL AND (g.gh <> m.ft_home OR g.ga <> m.ft_away) AND m.competition_code IN ({big})""",
+                 "matchs dont les buts détaillés ne font pas le score")
+    return out
+
+
 def run_audit(con: duckdb.DuckDBPyConnection) -> list[Problem]:
-    out: list[Problem] = _identity_problems(con)
+    out: list[Problem] = _identity_problems(con) + _match_problems(con)
     for code, year in VACANT:
         out += _scan(con, "vacant_title", "blocking", """
             SELECT co.code || ' ' || w.season_start, 'titre vacant présent : ' || w.winner_name
