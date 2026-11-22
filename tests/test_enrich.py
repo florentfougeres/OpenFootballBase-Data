@@ -264,8 +264,8 @@ def test_images_deleted_from_wikimedia_are_removed_replaced_by_the_pages_current
     assert rows[0][1] == "New photo.jpg" and rows[0][2] == "https://x/New photo.jpg"          # remplacée, adresse résolue
     assert rows[1][1] == "Fine photo.jpg" and rows[1][2] is not None                           # intacte
     assert rows[2][1] is None and rows[2][2] is None                                           # plus de photo, pas d'image cassée
-    assert c.execute("SELECT id, logo_url IS NULL FROM club ORDER BY id").fetchall() == [(1, True), (2, False)]
-    assert check_images(c, wp, log=lambda *_: None) == {"photos": 0, "remplacées": 0, "logos": 0}   # idempotent
+    assert c.execute("SELECT id, logo_url IS NULL FROM club ORDER BY id").fetchall() == [(1, False), (2, False)]   # clubs = données figées : le logo disparu est signalé, jamais modifié
+    assert check_images(c, wp, log=lambda *_: None) == {"photos": 0, "remplacées": 0, "logos": 1}   # idempotent pour les photos
 
 
 def test_a_quarter_of_the_files_is_checked_per_run():

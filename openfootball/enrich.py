@@ -223,9 +223,10 @@ def missing_files(wp, names: list[str]) -> set[str]:
 
 
 def check_images(con: duckdb.DuckDBPyConnection, wp, wd=None, *, part: tuple[int, int] | None = None, log: Callable[[str], None] = print) -> dict[str, int]:
-    """Retire les images publiées dont le fichier a été supprimé de Wikimedia depuis leur lecture : elles s'afficheraient cassées sur le site.
+    """Retire les photos de joueurs dont le fichier a été supprimé de Wikimedia depuis leur lecture : elles s'afficheraient cassées sur le site.
     Une photo de joueur est remplacée par l'image actuelle de sa page Wikipedia anglaise (`pageimages`), à défaut par l'image (P18) de son élément Wikidata (`wd`), puis résolue comme les autres ;
-    sinon le joueur n'a plus de photo. Un logo de club supprimé est retiré (le site dessine alors un écusson). Rend {photos, remplacées, logos}.
+    sinon le joueur n'a plus de photo. Les clubs (logo, couleurs, nom) sont des données figées : un logo dont le fichier a disparu est seulement COMPTÉ (`logos`), jamais modifié ;
+    le site dessine un écusson à la place et la correction se fait à la main. Rend {photos, remplacées, logos}.
     `part` = (k, n) : ne contrôle que les fichiers du k-ième quart (par empreinte du nom), pour borner le temps d'un passage ; en tournant sur la semaine, tout est vu en n passages."""
     photos = {r[0] for r in con.execute("SELECT DISTINCT image_file FROM player_profile WHERE image_file IS NOT NULL AND image_url IS NOT NULL").fetchall()}
     logos: dict[str, list[int]] = {}
@@ -235,9 +236,9 @@ def check_images(con: duckdb.DuckDBPyConnection, wp, wd=None, *, part: tuple[int
     files = [f for f in photos | set(logos) if part is None or zlib.crc32(f.encode()) % part[1] == part[0]]
     gone = missing_files(wp, files)
     out = {"photos": 0, "remplacées": 0, "logos": 0}
-    for name in gone & set(logos):
-        con.execute("UPDATE club SET logo_url = NULL, logo_license = NULL, logo_commons_url = NULL WHERE id IN (SELECT unnest(?))", [logos[name]])
+    for name in sorted(gone & set(logos)):
         out["logos"] += len(logos[name])
+        log(f"  logo de club disparu de Wikimedia (non modifié, donnée figée) : {name} -> clubs {logos[name]}")
     lost = sorted(gone & photos)
     lost_ids = [r[0] for r in con.execute("SELECT player_id FROM player_profile WHERE image_file IN (SELECT unnest(?))", [lost]).fetchall()] if lost else []
     for name in lost:

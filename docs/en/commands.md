@@ -45,7 +45,7 @@ Reminder: `export OPENFOOTBALL_CONTACT="your-contact"` before any command that q
 | `enrich --what players` | Wikipedia links per language and birth dates (hence ages). | |
 | `enrich --what clubs` | Wikipedia links and French names of clubs with squads. | |
 | `enrich --what careerclubs` | Links the clubs cited in careers to their record (QID). | |
-| `enrich --what imagecheck` | Removes player photos and club logos whose file was deleted from Wikimedia (they would show up broken); a photo is replaced by the current image of the player's Wikipedia page, failing that Wikidata's. A quarter of the files per run (by week). | |
+| `enrich --what imagecheck` | Removes player photos whose file was deleted from Wikimedia (they would show up broken); clubs (logo, colours, name) are never modified: a vanished logo is only reported; a photo is replaced by the current image of the player's Wikipedia page, failing that Wikidata's. A quarter of the files per run (by week). | |
 | `enrich --what labels` | English labels of stadiums, leagues and cities in non-Latin scripts. | |
 | `enrich --what logos` | Club logos (Wikipedia infobox): clubs with squads by default. | `--all-clubs`, `--logo-limit N`, `--refresh-logos` (also overwrites hand-set logos) — see [bulk-logos.md](bulk-logos.md) |
 | `enrich` (no `--what`) | Everything: clubs, players, logos, labels, careerclubs. | |
