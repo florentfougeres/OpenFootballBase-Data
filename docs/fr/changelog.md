@@ -6,6 +6,7 @@ Les releases de données publiées, la plus récente d'abord. Les noms suivent l
 
 ## Prochaine release de données (non publiée)
 - **Images supprimées de Wikimedia** : une photo de joueur (Hamza Abdelkarim) dont le fichier est supprimé après la lecture s'affichait cassée sur le site. Le passage hebdomadaire (`enrich --what imagecheck`) contrôle un quart des fichiers par semaine, retire les photos disparues et remet l'image actuelle de la page du joueur (à défaut celle de Wikidata). Le site, lui, n'affiche plus d'image cassée : le logo ou l'écusson dessiné prend le relais.
+- **Faits de clubs complétés depuis Wikidata** (`enrich --what clubfacts`, ajouté au passage hebdomadaire) : couleurs, identifiants Transfermarkt/FBref/Soccerway/worldfootball et surnom manquants, uniquement dans les cases vides (sur la base actuelle : +54 couleurs, +215 Transfermarkt, +93 FBref, +68 Soccerway, +39 worldfootball, +111 surnoms).
 - **Clubs : logo, couleurs et nom ne sont jamais modifiés par le passage hebdomadaire** : ce sont des données figées (corrigées à la main dans la base). `imagecheck` ne retirait plus que les logos de clubs disparus de Wikimedia ; il les signale désormais seulement, le site dessinant un écusson à la place.
 
 ## Data 1.24.0 — 2026-11-21

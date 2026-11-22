@@ -292,3 +292,34 @@ def test_a_deleted_photo_falls_back_to_the_wikidata_image_when_the_page_has_none
     out = check_images(c, wp, FakeWdImages(), log=lambda *_: None)
     assert out["photos"] == 2 and out["remplacées"] == 2
     assert [r[0] for r in c.execute("SELECT image_file FROM player_profile ORDER BY player_id").fetchall()] == ["Wikidata photo.jpg", "Fine photo.jpg", "Wikidata photo.jpg"]
+
+
+def test_club_facts_fill_only_empty_cells(tmp_path):
+    from openfootball.enrich import enrich_club_facts
+    con = duckdb.connect(str(tmp_path / "t.duckdb")); migrate(con)
+    con.execute("INSERT INTO season (id, start_year, label, status) VALUES (1, 2025, '2025/26', 'open')")
+    for cid, q, extra in ((1, "Q1", ""), (2, "Q2", "")):
+        con.execute("INSERT INTO club (id, wikidata_qid, name_en) VALUES (?, ?, ?)", [cid, q, f"C{cid}"])
+    con.execute("UPDATE club SET colors_hex = '#111111', colors = 'noir', nickname = 'Les Siens', transfermarkt_id = '999' WHERE id = 2")
+    con.execute("INSERT INTO country (code, name_en, name_fr) VALUES ('FRA', 'France', 'France')")
+    con.execute("INSERT INTO competition (id, code, name_en, name_fr, country_code, level) VALUES (1, 'FRA1', 'L1', 'L1', 'FRA', 1)")
+    for cid in (1, 2):
+        con.execute("INSERT INTO club_season (id, club_id, season_id, competition_id) VALUES (?, ?, 1, 1)", [cid, cid])
+
+    class WD:
+        def entities(self, qids, props, languages=None, sitefilter=None):
+            db = {
+                "Q1": {"claims": {"P6364": [{"mainsnak": {"datavalue": {"value": {"id": "Q3"}}}}, {"mainsnak": {"datavalue": {"value": {"id": "Q4"}}}}],
+                                  "P7223": [{"mainsnak": {"datavalue": {"value": "418"}}}], "P8642": [{"mainsnak": {"datavalue": {"value": "53a2f082"}}}],
+                                  "P1449": [{"mainsnak": {"datavalue": {"value": {"text": "The Reds", "language": "en"}}}}]}},
+                "Q2": {"claims": {"P6364": [{"mainsnak": {"datavalue": {"value": {"id": "Q3"}}}}], "P7223": [{"mainsnak": {"datavalue": {"value": "1"}}}],
+                                  "P1449": [{"mainsnak": {"datavalue": {"value": {"text": "Autres", "language": "fr"}}}}]}},
+                "Q3": {"labels": {"fr": {"value": "rouge"}}, "claims": {"P465": [{"mainsnak": {"datavalue": {"value": "ff0000"}}}]}},
+                "Q4": {"labels": {"en": {"value": "white"}}, "claims": {"P465": [{"mainsnak": {"datavalue": {"value": "FFFFFF"}}}]}},
+            }
+            return {q: db[q] for q in qids if q in db}
+    out = enrich_club_facts(con, WD(), log=lambda m: None)
+    assert con.execute("SELECT colors, colors_hex, transfermarkt_id, fbref_id, nickname FROM club WHERE id = 1").fetchone() == (
+        "rouge | white", "#FF0000 | #FFFFFF", "418", "53a2f082", "The Reds")
+    assert con.execute("SELECT colors, colors_hex, transfermarkt_id, nickname FROM club WHERE id = 2").fetchone() == ("noir", "#111111", "999", "Les Siens")   # rien d'écrasé
+    assert out["colors_hex"] == 1 and out["transfermarkt_id"] == 1

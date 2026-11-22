@@ -6,6 +6,7 @@ Published data releases, newest first. Names follow [semantic versioning](https:
 
 ## Next data release (unpublished)
 - **Images deleted from Wikimedia**: a player photo (Hamza Abdelkarim) whose file is deleted after it was read showed up broken on the site. The weekly run (`enrich --what imagecheck`) checks a quarter of the files per week, removes the vanished photos and puts back the current image of the player's page (failing that Wikidata's). The site no longer shows a broken image: the drawn logo or crest takes over.
+- **Club facts completed from Wikidata** (`enrich --what clubfacts`, added to the weekly run): missing colours, Transfermarkt/FBref/Soccerway/worldfootball identifiers and nickname, in empty cells only (on the current database: +54 colours, +215 Transfermarkt, +93 FBref, +68 Soccerway, +39 worldfootball, +111 nicknames).
 - **Clubs: logo, colours and name are never modified by the weekly run**: they are frozen data (fixed by hand in the database). `imagecheck` used to remove club logos that disappeared from Wikimedia; it now only reports them, the site drawing a crest instead.
 
 ## Data 1.24.0 — 2026-11-21

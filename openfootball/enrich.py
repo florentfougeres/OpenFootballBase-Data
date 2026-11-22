@@ -53,6 +53,75 @@ def enrich_wiki_links(con: duckdb.DuckDBPyConnection, wd, qids: list[str], langs
 NON_LATIN = r"[^\p{Latin}\p{Common}\p{Inherited}]"       # RE2 : une lettre hors alphabet latin (cyrillique, arabe, CJK…)
 
 
+# Faits de clubs lus sur Wikidata : propriété -> colonne de `club`. Les identifiants externes sont ceux de l'extraction mondiale (tools/world_clubs).
+CLUB_EXTERNAL_IDS = {"P7223": "transfermarkt_id", "P8642": "fbref_id", "P6131": "soccerway_id", "P7287": "worldfootball_id"}
+_HEX = re.compile(r"^#?[0-9A-Fa-f]{6}$")
+
+
+def _claim_values(claims: dict, prop: str) -> list:
+    """Valeurs (non « sans valeur ») d'une propriété Wikidata, dans l'ordre ; les valeurs dépréciées sont écartées."""
+    out = []
+    for c in claims.get(prop, []):
+        if c.get("rank") == "deprecated":
+            continue
+        v = c.get("mainsnak", {}).get("datavalue", {}).get("value")
+        if v is not None:
+            out.append(v)
+    return out
+
+
+def enrich_club_facts(con: duckdb.DuckDBPyConnection, wd, *, log: Callable[[str], None] = print) -> dict[str, int]:
+    """Complète les clubs à effectifs avec ce que Wikidata sait et que la base n'a pas : couleurs (P6364, avec le code sRGB P465 de la couleur),
+    identifiants Transfermarkt, FBref, Soccerway et worldfootball, surnom (P1449).
+    **Ne remplit que les cases VIDES** : une valeur déjà là (extraction mondiale, correction manuelle) n'est jamais remplacée, ni le nom, ni le logo.
+    Rend le nombre de cases remplies par colonne."""
+    clubs = con.execute("""SELECT id, wikidata_qid, colors_hex IS NULL, nickname IS NULL, transfermarkt_id IS NULL, fbref_id IS NULL, soccerway_id IS NULL,
+                                  worldfootball_id IS NULL FROM club c WHERE wikidata_qid IS NOT NULL AND EXISTS (SELECT 1 FROM club_season cs WHERE cs.club_id = c.id)""").fetchall()
+    wanted = {"colors_hex": 2, "nickname": 3, "transfermarkt_id": 4, "fbref_id": 5, "soccerway_id": 6, "worldfootball_id": 7}
+    clubs = [r for r in clubs if any(r[i] for i in wanted.values())]
+    filled: dict[str, int] = {c: 0 for c in wanted}
+    ents: dict[str, dict] = {}
+    for chunk in _chunks([r[1] for r in clubs], BATCH):
+        ents.update(wd.entities(chunk, props="claims"))
+    color_items = sorted({v["id"] for r in clubs if r[2] for v in _claim_values(ents.get(r[1], {}).get("claims", {}), "P6364") if isinstance(v, dict) and "id" in v})
+    colors: dict[str, tuple[str | None, str | None]] = {}                     # QID de la couleur -> (nom français, code #RRGGBB)
+    for chunk in _chunks(color_items, BATCH):
+        for q, e in wd.entities(chunk, props="labels|claims", languages="fr|en").items():
+            name = ((e.get("labels", {}).get("fr") or e.get("labels", {}).get("en")) or {}).get("value")
+            hexa = next((str(v) for v in _claim_values(e.get("claims", {}), "P465") if _HEX.match(str(v))), None)
+            colors[q] = (name, "#" + hexa.lstrip("#").upper() if hexa else None)
+    con.execute("BEGIN")
+    for row in clubs:
+        cid, qid = row[0], row[1]
+        claims = ents.get(qid, {}).get("claims", {})
+        sets: dict[str, str] = {}
+        if row[2]:
+            items = [colors.get(v["id"]) for v in _claim_values(claims, "P6364") if isinstance(v, dict) and "id" in v]
+            items = [i for i in items if i and i[1]]
+            if items:
+                sets["colors_hex"] = " | ".join(h for _, h in items)
+                sets["colors"] = " | ".join(n for n, _ in items if n) or None
+        for prop, col in CLUB_EXTERNAL_IDS.items():
+            if row[wanted[col]]:
+                vals = [str(v) for v in _claim_values(claims, prop) if isinstance(v, str)]
+                if vals:
+                    sets[col] = vals[0]
+        if row[3]:
+            nicks = {(v.get("language") or ""): v.get("text") for v in _claim_values(claims, "P1449") if isinstance(v, dict) and v.get("text")}
+            nick = nicks.get("fr") or nicks.get("en") or next(iter(nicks.values()), None)
+            if nick:
+                sets["nickname"] = nick
+        for col, val in sets.items():
+            if col == "colors":
+                con.execute("UPDATE club SET colors = ? WHERE id = ? AND colors IS NULL", [val, cid])
+            else:
+                con.execute(f"UPDATE club SET {col} = ? WHERE id = ? AND {col} IS NULL", [val, cid])
+                filled[col] += 1
+    con.execute("COMMIT")
+    log("  faits de clubs (Wikidata, cases vides seulement) : " + ", ".join(f"{k} {v}" for k, v in filled.items()) + f" ({len(clubs)} clubs examinés)")
+    return filled
+
+
 def enrich_context_labels(con: duckdb.DuckDBPyConnection, wd, *, log: Callable[[str], None] = print) -> int:
     """Libellé ANGLAIS (Wikidata) du stade, du championnat et de la ville des clubs dont le nom publié est en
     alphabet non latin : le site affiche l'anglais plutôt que du russe, de l'arabe ou du chinois."""

@@ -45,6 +45,7 @@ Rappel : `export OPENFOOTBALL_CONTACT="votre-contact"` avant toute commande qui 
 | `enrich --what players` | Liens Wikipedia par langue et dates de naissance (donc les âges). | |
 | `enrich --what clubs` | Liens Wikipedia et noms français des clubs à effectifs. | |
 | `enrich --what careerclubs` | Relie les clubs cités dans les carrières à leur fiche (QID). | |
+| `enrich --what clubfacts` | Complète les clubs à effectifs avec Wikidata : couleurs (P6364 + code sRGB de la couleur), identifiants Transfermarkt / FBref / Soccerway / worldfootball, surnom. **Ne remplit que les cases vides** : jamais de remplacement (valeur importée, correction manuelle), ni du nom ni du logo. | |
 | `enrich --what imagecheck` | Retire les photos de joueurs dont le fichier a été supprimé de Wikimedia (elles s'afficheraient cassées) ; les clubs (logo, couleurs, nom) ne sont jamais modifiés : un logo disparu est seulement signalé ; une photo est remplacée par l'image actuelle de la page Wikipedia du joueur, à défaut par celle de Wikidata. Un quart des fichiers par passage (selon la semaine). | |
 | `enrich --what labels` | Libellés anglais des stades, championnats et villes en alphabet non latin. | |
 | `enrich --what logos` | Logos des clubs (infobox Wikipedia) : clubs à effectifs par défaut. | `--all-clubs`, `--logo-limit N`, `--refresh-logos` (écrase aussi les logos posés à la main) — voir [bulk-logos.md](bulk-logos.md) |
