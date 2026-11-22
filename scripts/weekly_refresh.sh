@@ -8,7 +8,7 @@ export OPENFOOTBALL_CONTACT="https://github.com/florentfougeres/OpenFootballBase
 OF=.venv/bin/openfootball
 DB=data/work/openfootball.duckdb
 STAMP=$(date +%Y%m%d)
-mkdir -p data/work/logs data/work/backups dist
+mkdir -p data/work/logs dist
 exec > >(tee -a "data/work/logs/weekly_$STAMP.log") 2>&1
 
 LOCK=data/work/weekly.lock                              # un seul passage à la fois (la base DuckDB n'a qu'un écrivain) ; mkdir est atomique, sans flock (absent de macOS)
@@ -23,8 +23,7 @@ mkdir -p /tmp/prev && gh release download "$LAST" --pattern "*-data.tar.gz" --di
 tar -xzOf /tmp/prev/*-data.tar.gz manifest.json > /tmp/prev/manifest.json
 grep -q '"work"' /tmp/prev/manifest.json || { echo "la release $LAST n'a pas de données de travail (clé work) : reconstruire depuis elle perdrait mouvements, prêts et libellés. Abandon."; exit 1; }
 # Base de travail reconstruite à chaque passage depuis la dernière release publiée : on repart toujours de ce que le site affiche, sans dérive ni reste d'un essai.
-if [ -f "$DB" ]; then mv "$DB" "data/work/backups/openfootball_avant_$STAMP.duckdb"; fi   # l'ancienne base est gardée (3 dernières)
-{ ls -1t data/work/backups/*.duckdb 2>/dev/null || true; } | tail -n +4 | xargs -r rm -f   # sans sauvegarde (premier passage dans un dossier neuf), rien à faire
+if [ -f "$DB" ]; then mv -f "$DB" data/work/openfootball.avant.duckdb; fi   # une seule copie de sécurité (la base d'avant), écrasée à chaque passage
 $OF restore-db --release "$LAST" --db "$DB"
 
 $OF careers --active --fresh                           # infobox de carrière + profil
