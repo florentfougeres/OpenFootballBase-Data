@@ -18,6 +18,9 @@ import duckdb
 
 from openfootball.countries import flag_code
 from openfootball.enrich import NON_LATIN
+
+# Clubs féminins : catégorie Wikidata (« football féminin »), « (women) », « W.F.C. », « Féminin », « Femminile », « Frauen », « Ladies »…
+WOMEN_CLUB = r"(\(women\)|\bwomen\b|\bW\.?F\.?C\.?\b|féminin|feminin|femminile|femenino|\bfrauen\b|\bladies\b)"
 from openfootball.schema_doc import build_schema_doc
 
 _SQUAD = """
@@ -192,6 +195,8 @@ _GLOBAL = {
             "LEFT JOIN entity_label ci ON ci.qid = c.city_qid AND ci.lang = 'en' "
             "LEFT JOIN entity_label st ON st.qid = c.stadium_qid AND st.lang = 'en' "
             "LEFT JOIN entity_label lg ON lg.qid = c.league_qid AND lg.lang = 'en' "
+            # Les clubs féminins ne sont pas publiés (le site ne couvre que le football masculin) sauf s'ils ont un effectif (volley-ball, clubs mixtes : faux positifs du motif).
+            f"WHERE EXISTS (SELECT 1 FROM club_season cs WHERE cs.club_id = c.id) OR NOT regexp_matches(coalesce(c.category, '') || ' ' || coalesce(c.wikipedia_title, '') || ' ' || coalesce(c.name_en, ''), '{WOMEN_CLUB}', 'i') "
             "ORDER BY has_squads DESC, c.wikidata_qid NULLS LAST, c.id",   # les clubs à effectifs d'abord : le site ne lit que ces groupes
 
     "birth": "SELECT w.qid AS player_qid, strftime(b.birth_date, '%Y-%m-%d') AS birth_date, b.precision "
