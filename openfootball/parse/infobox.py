@@ -121,6 +121,34 @@ def parse_career(wikitext: str) -> list[CareerSpell]:
     return []
 
 
+@dataclass(frozen=True)
+class ManagerSpell:
+    seq: int
+    start_year: int | None
+    end_year: int | None          # None = en cours / inconnue
+    years_raw: str
+    team_name: str
+    team_link: str | None
+
+
+def parse_managerial(wikitext: str) -> list[ManagerSpell]:
+    """Lignes `manager_years1`, `manager_clubs1` (ou sans le tiret bas)… de l'infobox : les équipes entraînées (clubs et sélections, postes d'adjoint compris)."""
+    text = clean(wikitext)
+    for _, body in iter_templates(text, _INFOBOX):
+        p = _params(body)
+        idx = sorted({int(m.group(1)) for k in p if (m := re.fullmatch(r"manager_?(?:years|clubs)(\d+)", k))})
+        out: list[ManagerSpell] = []
+        for i in idx:
+            name, link = _club(p.get(f"manager_clubs{i}") or p.get(f"managerclubs{i}", ""))
+            if not name:
+                continue
+            years_raw = re.sub(r"<[^>]+>|\{\{.*?\}\}", "", p.get(f"manager_years{i}") or p.get(f"manageryears{i}", "")).strip()
+            start, end = parse_years(years_raw)
+            out.append(ManagerSpell(seq=i, start_year=start, end_year=end, years_raw=years_raw, team_name=name, team_link=link))
+        return out
+    return []
+
+
 # ----------------------------------------------------------------------------------------------- profil du joueur
 @dataclass(frozen=True)
 class Profile:

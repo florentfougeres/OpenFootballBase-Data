@@ -12,6 +12,7 @@ from typing import Callable
 import duckdb
 
 from openfootball.countries import flag_code
+from openfootball.parse.infobox import parse_managerial
 
 BATCH = 80
 
@@ -131,3 +132,34 @@ def import_coaches(con: duckdb.DuckDBPyConnection, wd, *, log: Callable[[str], N
     n = con.execute("SELECT count(*) FROM club_coach").fetchone()[0]
     log(f"  entraîneurs : {n} mandats, {con.execute('SELECT count(DISTINCT club_id) FROM club_coach').fetchone()[0]} clubs sur {len(clubs)}")
     return n
+
+
+def import_coach_careers(con: duckdb.DuckDBPyConnection, wp, *, log: Callable[[str], None] = print) -> int:
+    """Remplace `coach_career` : l'infobox (« Teams managed ») de la page anglaise de chaque entraîneur qui en a une (`coach_profile.wikipedia_en`).
+    Une page qui n'a pas d'infobox de carrière d'entraîneur ne donne aucune ligne ; un échec de lecture laisse la table inchangée."""
+    titles = {t: q for q, t in con.execute("SELECT coach_qid, wikipedia_en FROM coach_profile WHERE wikipedia_en IS NOT NULL").fetchall()}
+    if not titles:
+        log("  carrières d'entraîneurs : aucune page à lire")
+        return 0
+    rows: list[tuple] = []
+    todo = list(titles)
+    for i in range(0, len(todo), 200):
+        for page in wp.get_pages(todo[i:i + 200]):
+            if not page.exists or not page.wikitext:
+                continue
+            for sp in parse_managerial(page.wikitext):
+                rows.append((titles[page.title], sp.seq, sp.start_year, sp.end_year, sp.years_raw, sp.team_name, sp.team_link))
+        log(f"  {min(i + 200, len(todo))}/{len(todo)} pages d'entraîneurs lues")
+    if not rows:
+        log("  carrières d'entraîneurs : aucune ligne lue, table inchangée")
+        return 0
+    con.execute("BEGIN")
+    try:
+        con.execute("DELETE FROM coach_career")
+        con.executemany("INSERT INTO coach_career VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT DO NOTHING", rows)
+        con.execute("COMMIT")
+    except Exception:
+        con.execute("ROLLBACK")
+        raise
+    log(f"  carrières d'entraîneurs : {len(rows)} lignes pour {len({r[0] for r in rows})} entraîneurs")
+    return len(rows)

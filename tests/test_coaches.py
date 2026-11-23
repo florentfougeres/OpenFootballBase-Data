@@ -1,7 +1,7 @@
 """Entraîneurs : lecture des mandats Wikidata (début, fin, doublons) et écriture de `club_coach`."""
 import duckdb
 
-from openfootball.coaches import import_coaches, parse_coaches, parse_flags, parse_profiles
+from openfootball.coaches import import_coach_careers, import_coaches, parse_coaches, parse_flags, parse_profiles
 from openfootball.db import migrate
 
 CLUB = "http://www.wikidata.org/entity/Q1893"
@@ -87,3 +87,26 @@ def test_fiche_naissance_jour_ou_annee_lieu_et_pages():
     got = parse_profiles(rows)
     assert str(got["Q1"][0]) == "1970-05-08" and got["Q1"][1] is None and got["Q1"][2] == "Gijón" and got["Q1"][3:] == ("Luis Enrique", "Luis Enrique Martínez")
     assert got["Q2"] == (None, 1955, None, None, None) and got["Q3"] == (None, None, None, None, None)
+
+
+def test_carriere_d_entraineur_lue_dans_l_infobox():
+    from openfootball.parse.infobox import parse_managerial
+    wt = ("{{Infobox football biography | name = Hansi Flick | years1 = 1983–1985 | clubs1 = [[SV Sandhausen]] "
+          "| manager_years1 = 2006–2014 | manager_clubs1 = [[Germany national football team|Germany]] (assistant) "
+          "| manageryears2 = 2019–2021 | managerclubs2 = [[FC Bayern Munich]] | manageryears3 = 2024– | managerclubs3 = [[FC Barcelona]] }}")
+    got = parse_managerial(wt)
+    assert [(s.seq, s.start_year, s.end_year, s.team_name, s.team_link) for s in got] == [
+        (1, 2006, 2014, "Germany", "Germany national football team"), (2, 2019, 2021, "FC Bayern Munich", "FC Bayern Munich"), (3, 2024, None, "FC Barcelona", "FC Barcelona")]
+
+
+def test_import_carrieres_ecrit_la_table():
+    from types import SimpleNamespace
+    con = duckdb.connect(":memory:")
+    migrate(con)
+    con.execute("INSERT INTO coach_profile (coach_qid, wikipedia_en) VALUES ('Q577384', 'Hansi Flick')")
+
+    class Wp:
+        def get_pages(self, titles):
+            return [SimpleNamespace(title="Hansi Flick", exists=True, wikitext="{{Infobox football biography | manageryears1 = 2019–2021 | managerclubs1 = [[FC Bayern Munich]] }}")]
+    assert import_coach_careers(con, Wp(), log=lambda _: None) == 1
+    assert con.execute("SELECT coach_qid, team_name FROM coach_career").fetchall() == [("Q577384", "FC Bayern Munich")]

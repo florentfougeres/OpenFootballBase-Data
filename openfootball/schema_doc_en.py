@@ -290,6 +290,18 @@ TABLES_EN: dict[str, tuple[str, str, dict[str, str]]] = {
             "wikipedia_fr": "Title of the French Wikipedia page.",
         },
     ),
+    "coach_career": (
+        "Coaching career from the infobox of the coach's English Wikipedia page (\"Teams managed\"): clubs and national teams, assistant roles included, one row per team in the infobox order. Complements `coach` (Wikidata tenures of the clubs with squads).", "(coach_qid, seq)",
+        {
+            "coach_qid": "Wikidata QID of the coach.",
+            "seq": "Row rank in the infobox.",
+            "start_year": "First year.",
+            "end_year": "Last year; empty if ongoing or unknown.",
+            "years_raw": "Years as written in the infobox.",
+            "team_name": "Team coached (clubs, national teams).",
+            "team_link": "Title of the team's Wikipedia page when the infobox links it.",
+        },
+    ),
     "match": (
         "Matches: results, fixtures and details (ground, attendance, referee) of the league championships, the Champions League, World Cups, Euros, the Club World Cup, the Libertadores, the `world` repository and national teams since 1872. "
         "**Source: the open data of the OpenFootball project (github.com/openfootball, CC0)**, not Wikipedia; it covers recent seasons and some leagues only. "

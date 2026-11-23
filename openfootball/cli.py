@@ -729,6 +729,10 @@ def coaches_cmd(args: argparse.Namespace) -> int:
     con = connect(args.db)
     migrate(con)
     import_coaches(con, WikidataClient(args.wd_cache))
+    try:                                                # la carrière d'infobox est un plus : un échec Wikipedia ne perd pas les mandats
+        import_coach_careers(con, WikipediaClient(args.cache))
+    except Exception as exc:
+        print(f"  carrières d'entraîneurs ignorées (Wikipedia indisponible) : {exc}")
     return 0
 
 

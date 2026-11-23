@@ -295,6 +295,18 @@ TABLES: dict[str, tuple[str, str, dict[str, str]]] = {
             "wikipedia_fr": "Titre de la page Wikipedia française.",
         },
     ),
+    "coach_career": (
+        "Carrière d'entraîneur d'après l'infobox de sa page Wikipedia anglaise (« Teams managed ») : clubs et sélections, postes d'adjoint compris, une ligne par équipe dans l'ordre de l'infobox. Complète `coach` (mandats Wikidata des clubs à effectifs).", "(coach_qid, seq)",
+        {
+            "coach_qid": "QID Wikidata de l'entraîneur.",
+            "seq": "Rang de la ligne dans l'infobox.",
+            "start_year": "Première année.",
+            "end_year": "Dernière année ; vide si en cours ou inconnue.",
+            "years_raw": "Années telles qu'écrites dans l'infobox.",
+            "team_name": "Équipe entraînée (clubs, sélections).",
+            "team_link": "Titre de la page Wikipedia de l'équipe quand l'infobox la lie.",
+        },
+    ),
     "match": (
         "Matchs : résultats, calendriers et détails (stade, affluence, arbitre) des championnats, de la Ligue des champions, des Coupes du monde, des Euros, de la Coupe du monde des clubs, de la Libertadores, du dépôt `world` et des sélections nationales depuis 1872. "
         "**Source : les données ouvertes du projet OpenFootball (github.com/openfootball, CC0)**, pas Wikipedia ; elles couvrent les saisons récentes et certaines ligues seulement. "
@@ -441,7 +453,7 @@ TABLES: dict[str, tuple[str, str, dict[str, str]]] = {
     ),
 }
 
-ORDER = ["squad", "club_season", "squad_source", "club", "competition", "country", "season", "competition_club", "known_gap", "career", "national", "stat_club", "stat_national", "stat_source", "winner", "award", "national_title", "coach", "coach_profile", "match", "match_competition", "match_goal", "match_lineup", "match_card", "player_openfootball", "player_external_id", "top_scorer", "player_profile", "birth", "entity_wiki"]
+ORDER = ["squad", "club_season", "squad_source", "club", "competition", "country", "season", "competition_club", "known_gap", "career", "national", "stat_club", "stat_national", "stat_source", "winner", "award", "national_title", "coach", "coach_profile", "coach_career", "match", "match_competition", "match_goal", "match_lineup", "match_card", "player_openfootball", "player_external_id", "top_scorer", "player_profile", "birth", "entity_wiki"]
 
 INTRO = """# OpenFootballBase — dictionnaire de données
 
