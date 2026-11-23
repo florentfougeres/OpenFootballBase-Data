@@ -122,6 +122,34 @@ def enrich_club_facts(con: duckdb.DuckDBPyConnection, wd, *, log: Callable[[str]
     return filled
 
 
+PLAYER_EXTERNAL_IDS = {"P2446": "transfermarkt_id", "P5750": "fbref_id"}
+
+
+def enrich_player_ids(con: duckdb.DuckDBPyConnection, wd, *, limit: int | None = None, log: Callable[[str], None] = print) -> int:
+    """Identifiants Transfermarkt (P2446) et FBref (P5750) des joueurs qui ont un QID, lus sur Wikidata. Un joueur déjà dans `player_external_id` n'est pas relu ;
+    un joueur sans aucun identifiant n'y est pas écrit (il est donc relu au prochain passage : Wikidata s'enrichit). `limit` borne le nombre de joueurs d'un passage. Rend les lignes écrites."""
+    todo = [r for r in con.execute("""SELECT w.qid, w.player_id FROM player_wikidata w WHERE NOT EXISTS (SELECT 1 FROM player_external_id e WHERE e.player_id = w.player_id)
+                                       ORDER BY w.player_id""").fetchall()]
+    if limit:
+        todo = todo[:limit]
+    written = 0
+    for chunk in _chunks(todo, BATCH):
+        ents = wd.entities([q for q, _ in chunk], props="claims")
+        rows = []
+        for qid, pid in chunk:
+            claims = ents.get(qid, {}).get("claims", {})
+            ids = {col: next((str(v) for v in _claim_values(claims, prop) if isinstance(v, str)), None) for prop, col in PLAYER_EXTERNAL_IDS.items()}
+            if any(ids.values()):
+                rows.append((pid, ids["transfermarkt_id"], ids["fbref_id"]))
+        if rows:
+            con.execute("BEGIN")
+            con.executemany("INSERT INTO player_external_id VALUES (?, ?, ?) ON CONFLICT DO NOTHING", rows)
+            con.execute("COMMIT")
+            written += len(rows)
+    log(f"  identifiants joueurs (Wikidata) : {len(todo)} joueurs lus, {written} avec Transfermarkt et/ou FBref")
+    return written
+
+
 def enrich_context_labels(con: duckdb.DuckDBPyConnection, wd, *, log: Callable[[str], None] = print) -> int:
     """Libellé ANGLAIS (Wikidata) du stade, du championnat et de la ville des clubs dont le nom publié est en
     alphabet non latin : le site affiche l'anglais plutôt que du russe, de l'arabe ou du chinois."""

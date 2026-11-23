@@ -1,6 +1,6 @@
 # Suivi de l'avancement
 
-_Généré le 2026-11-16 par `openfootball progress` — ne pas éditer à la main._
+_Généré le 2026-11-18 par `openfootball progress` — ne pas éditer à la main._
 
 ## Effectifs par saison et par championnat
 
@@ -16783,12 +16783,12 @@ Chaque case : effectifs établis / clubs du championnat. `⚠` = au moins un tro
 
 | Donnée | Manquants | Sur |
 |---|---|---|
-| Joueurs sans identité Wikidata (QID) | 22413 | 85098 |
-| Joueurs sans carrière (infobox) | 25288 | 85098 |
-| Joueurs sans date de naissance au jour près | 23185 | 85098 |
-| Lignes d'effectif sans nationalité | 7244 | 327375 |
-| Lignes d'effectif sans poste | 2068 | 327375 |
-| Lignes d'effectif à statut inconnu (prêt/transfert) | 279180 | 327375 |
+| Joueurs sans identité Wikidata (QID) | 18150 | 81212 |
+| Joueurs sans carrière (infobox) | 20848 | 81212 |
+| Joueurs sans date de naissance au jour près | 18944 | 81212 |
+| Lignes d'effectif sans nationalité | 6370 | 303013 |
+| Lignes d'effectif sans poste | 1909 | 303013 |
+| Lignes d'effectif à statut inconnu (prêt/transfert) | 279059 | 303013 |
 | Clubs à effectifs sans logo | 395 | 2822 |
 | Clubs à effectifs sans page Wikipedia française | 689 | 2822 |
 
@@ -16796,12 +16796,12 @@ Chaque case : effectifs établis / clubs du championnat. `⚠` = au moins un tro
 
 | Donnée | Clubs | Sur |
 |---|---|---|
-| Clubs au total (table `club`) | 44970 | 44970 |
-| … dont avec effectifs détaillés | 2822 | 44970 |
-| … avec un logo (infobox ou Commons) | 17983 | 44970 |
-| … avec stade | 9886 | 44970 |
-| … avec date de fondation | 23588 | 44970 |
-| … avec page Wikipedia anglaise | 27720 | 44970 |
+| Clubs au total (table `club`) | 44982 | 44982 |
+| … dont avec effectifs détaillés | 2822 | 44982 |
+| … avec un logo (infobox ou Commons) | 17985 | 44982 |
+| … avec stade | 9828 | 44982 |
+| … avec date de fondation | 23588 | 44982 |
+| … avec page Wikipedia anglaise | 27732 | 44982 |
 
 ## À faire
 

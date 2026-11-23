@@ -17,12 +17,13 @@ from openfootball.wikiresults import LEAGUES as WIKI_LEAGUES, import_wikipedia_r
 from openfootball.matches import OpenFootballClient, current_start_year, drop_cancelled_fixtures, import_full, import_leagues, import_tournaments, import_txt_repos, link_match_players, purge_unseen
 from openfootball.checks import run_checks
 from openfootball.db import connect, migrate
-from openfootball.enrich import add_career_clubs, check_images, enrich_club_facts, enrich_match_competition_logos, enrich_player_photos, enrich_birth_dates, enrich_career_clubs, enrich_context_labels, enrich_league_logos, enrich_logos, enrich_wiki_links
+from openfootball.enrich import add_career_clubs, check_images, enrich_club_facts, enrich_player_ids, enrich_match_competition_logos, enrich_player_photos, enrich_birth_dates, enrich_career_clubs, enrich_context_labels, enrich_league_logos, enrich_logos, enrich_wiki_links
 from openfootball.progress import build_progress
 from openfootball.world_clubs import import_world_clubs, purge_non_clubs
 from openfootball.careers import import_profiles, import_careers, import_careers_by_qid, prune_after_career_end
 from openfootball.schema_doc import build_schema_doc
 from openfootball.awards import import_ballon_dor
+from openfootball.topscorers import import_top_scorers
 from openfootball.nationals import import_national_titles
 from openfootball.honours import drop_vacant, ensure_cups, fill_winners_from_wikipedia, import_winners, relink_winner_clubs, resolve_competition_qids
 from openfootball.reconstruct import reconstruct, reconstruct_from_careers
@@ -37,7 +38,7 @@ from openfootball.parse.league import league_teams, season_label
 from openfootball.parse.squad import is_excluded_section, parse_squad
 from openfootball.parse.squad_i18n import PARSERS
 from openfootball.sources.wikidata import WikidataClient, club_qids, season_articles
-from openfootball.sources.wikipedia import WikipediaClient
+from openfootball.sources.wikipedia import WikipediaClient, WikipediaError
 
 LEAGUE_CHOICES = sorted({sc.code for sc in load_scopes()} | {sc.competition_code for sc in load_scopes()})   # pays (toutes ses divisions) ou compétition
 LEAGUES = {sc.competition_code: sc.competition_en for sc in load_scopes()}      # un fichier scopes/*.toml par championnat
@@ -573,7 +574,7 @@ def enrich_cmd(args: argparse.Namespace) -> int:
     con = connect(args.db)
     migrate(con)
     wd, wp = WikidataClient(args.wd_cache), WikipediaClient(args.cache)
-    what = set(args.what or ["clubs", "players", "logos", "leaguelogos", "labels", "careerclubs", "photos", "imagecheck", "clubfacts"])
+    what = set(args.what or ["clubs", "players", "logos", "leaguelogos", "labels", "careerclubs", "photos", "imagecheck", "clubfacts", "playerids"])
     if "clubs" in what:
         qids = [r[0] for r in con.execute("SELECT wikidata_qid FROM club WHERE wikidata_qid IS NOT NULL AND EXISTS "
                                           "(SELECT 1 FROM club_season cs WHERE cs.club_id = club.id)").fetchall()]
@@ -585,7 +586,10 @@ def enrich_cmd(args: argparse.Namespace) -> int:
     if "photos" in what:
         enrich_player_photos(con, wp)
     if "imagecheck" in what:                             # un quart des fichiers par semaine : tout est revu en un mois
-        check_images(con, wp, wd, part=(date.today().isocalendar()[1] % 4, 4))
+        try:
+            check_images(con, wp, wd, part=(date.today().isocalendar()[1] % 4, 4))
+        except WikipediaError as exc:                    # contrôle facultatif : Wikipedia qui répond mal ne doit pas faire perdre tout le passage hebdomadaire
+            print(f"  imagecheck ignoré (Wikipedia indisponible) : {exc} ; le quart de la semaine sera revu au prochain passage")
     if "careerclubs" in what:
         enrich_career_clubs(con, wp)
         add_career_clubs(con, wd)
@@ -593,6 +597,8 @@ def enrich_cmd(args: argparse.Namespace) -> int:
         enrich_context_labels(con, wd)
     if "clubfacts" in what:
         enrich_club_facts(con, wd)
+    if "playerids" in what:
+        enrich_player_ids(con, wd)
     if "leaguelogos" in what:
         enrich_league_logos(con, wp)
         enrich_match_competition_logos(con, wp)
@@ -679,6 +685,20 @@ def awards_cmd(args: argparse.Namespace) -> int:
     con = connect(args.db)
     migrate(con)
     import_ballon_dor(con, WikipediaClient(args.cache), since=args.since, until=args.until)
+    return 0
+
+
+def topscorers_cmd(args: argparse.Namespace) -> int:
+    """Classement des buteurs de chaque championnat et de chaque saison (tableau « Top scorers » de la page Wikipedia de la saison) : les saisons passées depuis le cache (elles ne changent plus), la saison en cours relue."""
+    con = connect(args.db)
+    migrate(con)
+    langs = ("en", "fr", "es")
+    now = current_start_year()
+    os.environ.pop("OPENFOOTBALL_FRESH", None)
+    if not args.current_only:
+        import_top_scorers(con, {l: WikipediaClient(f"cache/wikipedia_results_{l}", lang=l) for l in langs}, years=list(range(args.since, now)))
+    os.environ["OPENFOOTBALL_FRESH"] = "1"                         # la saison en cours change chaque semaine : toujours relue
+    import_top_scorers(con, {l: WikipediaClient(f"cache/wikipedia_results_{l}", lang=l) for l in langs}, years=[now])
     return 0
 
 
@@ -927,7 +947,7 @@ def main(argv: list[str] | None = None) -> int:
     pf.set_defaults(func=profiles_cmd)
     en = sub.add_parser("enrich", help="liens wiki par langue, noms fr, dates de naissance, logos")
     en.add_argument("--db", default=DB_DEFAULT)
-    en.add_argument("--what", nargs="*", choices=["clubs", "players", "logos", "leaguelogos", "labels", "careerclubs", "photos", "imagecheck", "clubfacts"])
+    en.add_argument("--what", nargs="*", choices=["clubs", "players", "logos", "leaguelogos", "labels", "careerclubs", "photos", "imagecheck", "clubfacts", "playerids"])
     en.add_argument("--refresh-logos", action="store_true", help="efface puis refait tous les logos")
     en.add_argument("--logo-limit", type=int, help="ne traite que N clubs (les plus notoires d'abord)")
     en.add_argument("--all-clubs", action="store_true", help="logos de TOUS les clubs ayant une page anglaise (sinon : clubs à effectifs)")
@@ -984,6 +1004,11 @@ def main(argv: list[str] | None = None) -> int:
     aw.add_argument("--since", type=int, default=2000)
     aw.add_argument("--until", type=int, default=2025)
     aw.set_defaults(func=awards_cmd)
+    ts = sub.add_parser("topscorers", help="classement des buteurs de chaque championnat et de chaque saison (pages Wikipedia)")
+    ts.add_argument("--db", default=DB_DEFAULT)
+    ts.add_argument("--since", type=int, default=2010)
+    ts.add_argument("--current-only", action="store_true", help="ne relit que la saison en cours (le passage hebdomadaire : les saisons passées viennent de la release)")
+    ts.set_defaults(func=topscorers_cmd)
     st = sub.add_parser("stats", help="statistiques de carrière (matchs, buts par club, saison, compétition, sélection) depuis la page du joueur")
     st.add_argument("--db", default=DB_DEFAULT)
     st.add_argument("--since", type=int, default=2010, help="première saison de Ligue des champions prise en compte (année de début)")

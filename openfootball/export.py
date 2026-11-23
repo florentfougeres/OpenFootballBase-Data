@@ -107,6 +107,10 @@ SELECT a.award, a.year, a.rank, a.player_name, a.player_qid, a.club_name, cl.wik
 FROM award_ranking a LEFT JOIN club cl ON cl.id = a.club_id
 ORDER BY a.award, a.year, a.rank, a.player_name"""
 
+_TOP_SCORER = """SELECT t.competition_code AS competition, t.season_label AS season, t.rank, t.player_name, t.player_qid, t.club_name, cl.wikipedia_title AS club, t.goals
+FROM top_scorer t LEFT JOIN club cl ON cl.id = t.club_id
+ORDER BY t.competition_code, t.season_label, t.rank, t.player_name"""
+
 _NATIONAL_TITLE = """
 SELECT competition, year, team, player_name, player_qid, shirt_number, position FROM national_title ORDER BY competition, year, player_name"""
 
@@ -130,6 +134,8 @@ _MATCH_CARD = """SELECT c.match_id, c.seq, c.side, c.player_name, w.qid AS playe
 FROM match_card c LEFT JOIN player_wikidata w ON w.player_id = c.player_id ORDER BY c.match_id, c.seq"""
 _PLAYER_OPENFOOTBALL = """SELECT w.qid AS player_qid, o.height_cm, o.birth_place
 FROM player_openfootball o JOIN player_wikidata w ON w.player_id = o.player_id ORDER BY w.qid"""
+_PLAYER_EXTERNAL_ID = """SELECT w.qid AS player_qid, e.transfermarkt_id, e.fbref_id
+FROM player_external_id e JOIN player_wikidata w ON w.player_id = e.player_id ORDER BY w.qid"""
 _MATCH_COMPETITION = """SELECT mc.code, mc.name, i.wikipedia_title, i.logo_url, i.logo_license
 FROM match_competition mc LEFT JOIN competition_info i ON i.code = mc.code ORDER BY mc.code"""
 
@@ -251,6 +257,8 @@ def export_all(con: duckdb.DuckDBPyConnection, out_dir: str | Path) -> dict:
         manifest["tables"]["winner"] = _write(con, _WINNER, out, "winner", "winner")
     if con.execute("SELECT count(*) FROM award_ranking").fetchone()[0]:                      # classements publiés seulement si `awards` a été lancé
         manifest["tables"]["award"] = _write(con, _AWARD, out, "award", "award")
+    if con.execute("SELECT count(*) FROM top_scorer").fetchone()[0]:                         # classements des buteurs : publiés seulement si `topscorers` a été lancé
+        manifest["tables"]["top_scorer"] = _write(con, _TOP_SCORER, out, "top_scorer", "top_scorer")
     if con.execute("SELECT count(*) FROM national_title").fetchone()[0]:                     # titres en sélection : publiés seulement si `nationals` a été lancé
         manifest["tables"]["national_title"] = _write(con, _NATIONAL_TITLE, out, "national_title", "national_title")
     if con.execute("SELECT count(*) FROM club_coach").fetchone()[0]:                         # entraîneurs : publiés seulement si `coaches` a été lancé
@@ -264,6 +272,8 @@ def export_all(con: duckdb.DuckDBPyConnection, out_dir: str | Path) -> dict:
             manifest["tables"]["match_card"] = _write(con, _MATCH_CARD, out, "match_card", "match_card")
     if con.execute("SELECT count(*) FROM player_openfootball").fetchone()[0]:                # taille et lieu d'OpenFootball : publiés seulement si `players-data` a été lancé
         manifest["tables"]["player_openfootball"] = _write(con, _PLAYER_OPENFOOTBALL, out, "player_openfootball", "player_openfootball")
+    if con.execute("SELECT count(*) FROM player_external_id").fetchone()[0]:                 # Transfermarkt et FBref (Wikidata) : publiés seulement si `enrich --what playerids` a été lancé
+        manifest["tables"]["player_external_id"] = _write(con, _PLAYER_EXTERNAL_ID, out, "player_external_id", "player_external_id")
     manifest["tables"]["player_profile"] = _write(con, _PROFILE, out, "player_profile", "player_profile")
     manifest["tables"]["squad_source"] = _write(con, _SQUAD_SOURCE, out, "squad_source", "squad_source")
     manifest["tables"]["known_gap"] = _write(con, """

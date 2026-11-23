@@ -294,6 +294,27 @@ def test_a_deleted_photo_falls_back_to_the_wikidata_image_when_the_page_has_none
     assert [r[0] for r in c.execute("SELECT image_file FROM player_profile ORDER BY player_id").fetchall()] == ["Wikidata photo.jpg", "Fine photo.jpg", "Wikidata photo.jpg"]
 
 
+def test_player_external_ids_are_read_once_and_never_guessed(tmp_path):
+    from openfootball.enrich import enrich_player_ids
+    con = duckdb.connect(str(tmp_path / "t.duckdb")); migrate(con)
+    for pid, q in ((1, "Q1"), (2, "Q2"), (3, "Q3")):
+        con.execute("INSERT INTO player (id, name, wikidata_qid) VALUES (?, ?, ?)", [pid, f"P{pid}", q])
+        con.execute("INSERT INTO player_wikidata VALUES (?, ?)", [pid, q])
+    calls = []
+
+    class WD:
+        def entities(self, qids, props, languages=None, sitefilter=None):
+            calls.append(list(qids))
+            claim = lambda v: [{"mainsnak": {"datavalue": {"value": v}}}]
+            return {"Q1": {"claims": {"P2446": claim("418"), "P5750": claim("abc123")}},
+                    "Q2": {"claims": {"P5750": claim("def456")}},
+                    "Q3": {"claims": {}}}                          # aucun identifiant : pas de ligne
+    assert enrich_player_ids(con, WD(), log=lambda m: None) == 2
+    assert con.execute("SELECT player_id, transfermarkt_id, fbref_id FROM player_external_id ORDER BY 1").fetchall() == [(1, "418", "abc123"), (2, None, "def456")]
+    assert enrich_player_ids(con, WD(), log=lambda m: None) == 0              # idempotent
+    assert calls[1] == ["Q3"]                                                   # seul le joueur sans identifiant est relu
+
+
 def test_club_facts_fill_only_empty_cells(tmp_path):
     from openfootball.enrich import enrich_club_facts
     con = duckdb.connect(str(tmp_path / "t.duckdb")); migrate(con)

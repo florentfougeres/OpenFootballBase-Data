@@ -38,7 +38,7 @@ LEAGUES: dict[str, list[tuple[str, str]]] = {
 }
 
 # Pages de repli, lues seulement quand les pages de `LEAGUES` n'ont aucune matrice : la page française de Ligue 1 n'en a pas pour 2010/11 à 2016/17, 2021/22 et 2023/24 (la page anglaise, si).
-FALLBACK: dict[str, list[tuple[str, str]]] = {"FRA-L1": [("en", "{y}–{yy} Ligue 1")]}
+FALLBACK: dict[str, list[tuple[str, str]]] = {"FRA-L1": [("en", "{y}–{yy} Ligue 1")], "BEL-PL": [("en", "{y}–{yy} Belgian First Division A")]}      # la page belge s'appelait « First Division A » de 2016/17 à 2019/20
 
 _NAME = re.compile(r"\|\s*(?:name|nombre)_([A-Za-z0-9]+)\s*=\s*([^\n]*)")
 _LINK = re.compile(r"\[\[([^\]|#]+)(?:\|([^\]]*))?\]\]")
@@ -89,6 +89,14 @@ def parse_matrix(wikitext: str) -> tuple[dict[str, tuple[str, str]], list[WikiMa
 
 
 SUSPECT_MARGIN = 8       # une matrice de Wikipedia est éditée à la main : un écart de 8 buts ou plus (0-10), que personne ne confirme, n'est pas repris (7-0 ou 4-4 le sont)
+
+
+# Désaccords OpenFootball / matrice Wikipedia TRANCHÉS en faveur d'OpenFootball : avec ces scores, les buts marqués et encaissés de chacune des 20 équipes
+# redonnent exactement le classement final officiel (modèle « {année} Ligue 1 table » de Wikipedia) ; avec ceux de la matrice, non. Ils ne sont plus signalés.
+CONFIRMED_SCORES = {
+    ("FRA-L1", "2016/17", "Bastia", "Lyon"), ("FRA-L1", "2017/18", "RCSA", "FCN"), ("FRA-L1", "2018/19", "OM", "FCN"),
+    ("FRA-L1", "2018/19", "SDR", "MHSC"), ("FRA-L1", "2019/20", "ASC", "MHSC"),
+}
 
 
 @dataclass
@@ -143,6 +151,8 @@ def apply_results(con: duckdb.DuckDBPyConnection, code: str, label: str, names: 
             report.updated += 1
         elif (row[1], row[2]) == m.ft:
             report.same += 1
+        elif (code, label, m.home, m.away) in CONFIRMED_SCORES or (code, label, names[m.home][1], names[m.away][1]) in CONFIRMED_SCORES:
+            report.same += 1                                                  # désaccord déjà tranché (voir CONFIRMED_SCORES)
         else:
             report.conflicts.append(f"{code} {label} {names[m.home][1]} – {names[m.away][1]} : OpenFootball {row[1]}-{row[2]}, Wikipedia {m.ft[0]}-{m.ft[1]}")
     return report

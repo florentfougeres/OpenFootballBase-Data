@@ -370,6 +370,28 @@ TABLES: dict[str, tuple[str, str, dict[str, str]]] = {
             "birth_place": "Lieu de naissance (ville) ; vide si Wikipedia en a déjà un.",
         },
     ),
+    "top_scorer": (
+        "Classement des buteurs de chaque championnat et de chaque saison, lu dans le tableau « Top scorers » de la page Wikipedia de la saison (aucun autre calcul). "
+        "Le rang est recalculé sur les buts (classement standard : 1, 2, 2, 4).", "(competition, season, rank, player_name)",
+        {
+            "competition": "Code de la compétition (`ENG-PL`, `FRA-L1`…).",
+            "season": "Saison, par exemple `2017/18`.",
+            "rank": "Rang sur les buts ; les ex æquo partagent le même rang.",
+            "player_name": "Nom du joueur, tel que Wikipedia l'écrit.",
+            "player_qid": "QID Wikidata du joueur quand il est connu de la base, sinon vide.",
+            "club_name": "Club tel qu'écrit dans le tableau (celui de la saison).",
+            "club": "Titre de la page Wikipedia du club quand il est connu, sinon vide (jointure avec `club.wikipedia_title`).",
+            "goals": "Buts marqués en championnat.",
+        },
+    ),
+    "player_external_id": (
+        "Identifiants externes d'un joueur lus sur Wikidata (jamais devinés) : Transfermarkt (P2446) et FBref (P5750). Une ligne par joueur qui en a au moins un ; ils servent de liens sortants.", "(player_qid)",
+        {
+            "player_qid": "QID Wikidata du joueur (clé de jointure avec `player_profile.player_qid`).",
+            "transfermarkt_id": "Identifiant Transfermarkt (`https://www.transfermarkt.com/-/profil/spieler/<id>`) ; vide s'il n'y en a pas.",
+            "fbref_id": "Identifiant FBref (`https://fbref.com/en/players/<id>/`) ; vide s'il n'y en a pas.",
+        },
+    ),
     "player_profile": (
         "Profil lu dans l'infobox Wikipedia anglaise : nom complet, lieu de naissance, taille, décès et **photo** (une ligne par joueur "
         "ayant au moins une de ces informations). Valeurs **publiées telles quelles par Wikipedia, non vérifiées**.",
@@ -407,7 +429,7 @@ TABLES: dict[str, tuple[str, str, dict[str, str]]] = {
     ),
 }
 
-ORDER = ["squad", "club_season", "squad_source", "club", "competition", "country", "season", "competition_club", "known_gap", "career", "national", "stat_club", "stat_national", "stat_source", "winner", "award", "national_title", "coach", "match", "match_competition", "match_goal", "match_lineup", "match_card", "player_openfootball", "player_profile", "birth", "entity_wiki"]
+ORDER = ["squad", "club_season", "squad_source", "club", "competition", "country", "season", "competition_club", "known_gap", "career", "national", "stat_club", "stat_national", "stat_source", "winner", "award", "national_title", "coach", "match", "match_competition", "match_goal", "match_lineup", "match_card", "player_openfootball", "player_external_id", "top_scorer", "player_profile", "birth", "entity_wiki"]
 
 INTRO = """# OpenFootballBase — dictionnaire de données
 

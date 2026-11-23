@@ -56,7 +56,7 @@ def _merge(con, keep: int, dup: int) -> None:
     con.execute("DELETE FROM player WHERE id = ?", [dup])
 
 
-_ONE_ROW = ("player_profile", "player_openfootball", "player_stat_source")          # une ligne par joueur : celle du joueur conservé gagne
+_ONE_ROW = ("player_profile", "player_openfootball", "player_external_id", "player_stat_source")          # une ligne par joueur : celle du joueur conservé gagne
 _SETS = ("player_stat_club", "player_stat_national")                                 # un jeu de lignes par joueur : idem
 _KEYED = {"squad_row_source": "club_season_id, source_lang", "squad_movement": "club_season_id, direction"}    # une ligne par (effectif, …) : en cas de conflit celle du joueur conservé gagne
 _MATCH_TABLES = ("match_goal", "match_lineup", "match_card")                         # le joueur y est cité par son nom : on le rattache simplement
@@ -185,7 +185,7 @@ def normalize_player_names(con: duckdb.DuckDBPyConnection) -> int:
 
 
 _NO_REFERENCE = ("player_club_season", "player_career", "player_stat_club", "player_stat_national", "player_national", "squad_movement", "squad_row_source",
-                 "player_openfootball", "match_goal", "match_card", "match_lineup")
+                 "player_openfootball", "player_external_id", "match_goal", "match_card", "match_lineup")
 
 
 def remove_orphan_players(con: duckdb.DuckDBPyConnection) -> int:
@@ -237,6 +237,13 @@ def _distinct(ia: tuple | None, ib: tuple | None) -> bool:
     return ia[0] == ib[0]
 
 
+def unproven_variant(ia: tuple | None, ib: tuple | None, careers_a: int, careers_b: int, name_a: str, name_b: str) -> bool:
+    """Deux liens différents sans QID prouvent d'ordinaire deux personnes, SAUF ici : les deux sont de simples liens lus dans un effectif (aucune carrière, aucun QID : souvent une
+    page inexistante) et leurs noms ne diffèrent que d'une graphie (« Christan » / « Christian » Enemark) tout en tenant la même place (même numéro, même poste : vérifié par
+    `squad_duplicate_pairs`). Rien ne prouve alors deux personnes : c'est une faute de frappe ou une translittération lue dans deux sources."""
+    return bool(ia and ib and ia[0] == "t" and ib[0] == "t" and not careers_a and not careers_b and same_name_variant(name_a, name_b) == "close")
+
+
 def merge_squad_duplicates(con: duckdb.DuckDBPyConnection) -> ReconcileReport:
     """Répète `_squad_duplicates_pass` jusqu'à ce qu'elle ne change plus rien : une fusion révèle parfois une nouvelle paire (trois graphies d'un même nom). Cumule les comptes."""
     total = ReconcileReport()
@@ -282,10 +289,11 @@ def _squad_duplicates_pass(con: duckdb.DuckDBPyConnection) -> ReconcileReport:
     Une fusion qui touche une saison figée est refusée (SPEC L9) et rapportée. `unresolved` compte les paires à deux identités laissées telles quelles."""
     report = ReconcileReport()
     info: dict[int, dict] = {}
-    for pid, name, qid, title, n in con.execute("""
-            SELECT p.id, p.name, coalesce(p.wikidata_qid, w.qid), p.link_title, (SELECT count(*) FROM player_club_season x WHERE x.player_id = p.id)
+    for pid, name, qid, title, n, nc in con.execute("""
+            SELECT p.id, p.name, coalesce(p.wikidata_qid, w.qid), p.link_title, (SELECT count(*) FROM player_club_season x WHERE x.player_id = p.id),
+                   (SELECT count(*) FROM player_career x WHERE x.player_id = p.id)
             FROM player p LEFT JOIN player_wikidata w ON w.player_id = p.id""").fetchall():
-        info[pid] = {"name": name, "ident": _identity(qid, title), "rows": n}
+        info[pid] = {"name": name, "ident": _identity(qid, title), "rows": n, "careers": nc}
     pairs = squad_duplicate_pairs(con)
     seen_conflict: set[tuple[int, int]] = set()
     moved: dict[int, int] = {}
@@ -300,7 +308,7 @@ def _squad_duplicates_pass(con: duckdb.DuckDBPyConnection) -> ReconcileReport:
         if a == b:
             continue
         ia, ib = info[a]["ident"], info[b]["ident"]
-        if _distinct(ia, ib):
+        if _distinct(ia, ib) and not unproven_variant(ia, ib, info[a]["careers"], info[b]["careers"], info[a]["name"], info[b]["name"]):
             if (min(a, b), max(a, b)) not in seen_conflict:
                 seen_conflict.add((min(a, b), max(a, b)))
                 report.unresolved += 1
@@ -432,22 +440,39 @@ def _split_players_pass(con: duckdb.DuckDBPyConnection) -> ReconcileReport:
     return report
 
 
-def resolve_homonym_slots(con: duckdb.DuckDBPyConnection, pairs: list[tuple[int, int, int]]) -> ReconcileReport:
-    """Deux joueurs d'identités différentes tiennent la même place d'un effectif (même nom, même numéro) : un seul peut y être, l'autre est un homonyme lié à tort
-    (Javier Hernández au Real Madrid : le QID de l'attaquant mexicain et celui d'un autre). On garde celui dont la CARRIÈRE contient ce club cette saison et on retire la
-    ligne de l'autre, seulement si l'un est prouvé et l'autre non. Sinon on ne tranche pas (`unresolved`) : c'est à l'audit de le dire. `merged` = lignes retirées."""
-    report = ReconcileReport()
+def slot_support(con: duckdb.DuckDBPyConnection, pairs: list[tuple[int, int, int]]) -> dict[tuple[int, int, int], tuple[bool, bool]]:
+    """Pour chaque (joueur, joueur, club-saison) : la CARRIÈRE de chacun des deux contient-elle ce club cette saison ? (lecture seule)"""
     link_qid = _club_qids_by_link(con)
     careers: dict[int, list[tuple]] = defaultdict(list)
     for pid, link, name, start, end in con.execute("SELECT player_id, club_link, club_name, start_year, end_year FROM player_career").fetchall():
         careers[pid].append((link, name, start, end))
+    out: dict[tuple[int, int, int], tuple[bool, bool]] = {}
     for a, b, cs in pairs:
-        row = con.execute("""SELECT cl.wikipedia_title, s.start_year, cl.wikidata_qid, s.status, s.id, cl.name_en, s.label FROM club_season x JOIN club cl ON cl.id = x.club_id
+        row = con.execute("SELECT cl.wikipedia_title, s.start_year, cl.wikidata_qid, cl.name_en FROM club_season x JOIN club cl ON cl.id = x.club_id "
+                          "JOIN season s ON s.id = x.season_id WHERE x.id = ?", [cs]).fetchone()
+        if row:
+            title, year, club_qid, club = row
+            out[(a, b, cs)] = (_supported(careers.get(a, []), title or club, year, club_qid, link_qid),
+                               _supported(careers.get(b, []), title or club, year, club_qid, link_qid))
+    return out
+
+
+def resolve_homonym_slots(con: duckdb.DuckDBPyConnection, pairs: list[tuple[int, int, int]]) -> ReconcileReport:
+    """Deux joueurs d'identités différentes tiennent la même place d'un effectif (même nom, même numéro) : un seul peut y être, l'autre est un homonyme lié à tort
+    (Javier Hernández au Real Madrid : le QID de l'attaquant mexicain et celui d'un autre). On garde celui dont la CARRIÈRE contient ce club cette saison et on retire la
+    ligne de l'autre, seulement si l'un est prouvé et l'autre non. Si les DEUX carrières contiennent ce club cette saison, ce sont deux vrais joueurs qui portent le même nom
+    (Henrique et Henrique à Portuguesa) : rien à faire, et l'audit ne le signale pas. Sinon on ne tranche pas (`unresolved`) : c'est à l'audit de le dire. `merged` = lignes retirées."""
+    report = ReconcileReport()
+    support = slot_support(con, pairs)
+    for a, b, cs in pairs:
+        row = con.execute("""SELECT s.status, s.id, cl.name_en, s.label FROM club_season x JOIN club cl ON cl.id = x.club_id
                              JOIN season s ON s.id = x.season_id WHERE x.id = ?""", [cs]).fetchone()
         if not row or not all(con.execute("SELECT 1 FROM player_club_season WHERE player_id = ? AND club_season_id = ?", [p, cs]).fetchone() for p in (a, b)):
             continue                                              # la place a déjà été réglée (fusion ou retrait précédents)
-        title, year, club_qid, status, season_id, club, label = row
-        ok = {p: _supported(careers.get(p, []), title or club, year, club_qid, link_qid) for p in (a, b)}
+        status, season_id, club, label = row
+        ok = dict(zip((a, b), support[(a, b, cs)]))
+        if ok[a] and ok[b]:
+            continue                                              # deux vrais joueurs du même nom
         if ok[a] == ok[b]:
             report.unresolved += 1
             continue

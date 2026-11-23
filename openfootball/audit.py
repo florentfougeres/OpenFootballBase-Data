@@ -15,7 +15,7 @@ from datetime import date
 
 from openfootball.enrich import MIN_BIRTH_YEAR, MIN_PLAYER_AGE
 from openfootball.names import clean_person_name
-from openfootball.reconcile import _distinct, _identity, implausible_stays, non_players, orphan_player_ids, squad_duplicate_pairs
+from openfootball.reconcile import _distinct, _identity, implausible_stays, non_players, orphan_player_ids, slot_support, squad_duplicate_pairs, unproven_variant
 
 MIN_FIELD = 10            # une compétition-saison n'est « connue en entier » qu'avec au moins ce nombre de clubs inscrits
 MIN_AGE_STATS = 13        # âge minimal pour une ligne de statistiques (Falcao joue à 13 ans) ; la carrière commence avec les équipes de jeunes, dès 7 ans
@@ -63,8 +63,17 @@ def _identity_problems(con: duckdb.DuckDBPyConnection) -> list[Problem]:
     club = {cs: f"{c} {s}" for cs, c, s in con.execute(
         "SELECT x.id, cl.name_en, s.label FROM club_season x JOIN club cl ON cl.id = x.club_id JOIN season s ON s.id = x.season_id").fetchall()}
     twice, homonyms = [], []
-    for a, b, cs in squad_duplicate_pairs(con):
-        (homonyms if _distinct(ident[a], ident[b]) else twice).append((f"{names[a]} / {names[b]} — {club[cs]}", ""))
+    careers = dict(con.execute("SELECT player_id, count(*) FROM player_career GROUP BY 1").fetchall())
+    all_pairs = squad_duplicate_pairs(con)
+    distinct = [(a, b, cs) for a, b, cs in all_pairs
+                if _distinct(ident[a], ident[b]) and not unproven_variant(ident[a], ident[b], careers.get(a, 0), careers.get(b, 0), names[a], names[b])]
+    support = slot_support(con, distinct)
+    for a, b, cs in all_pairs:
+        if (a, b, cs) in support:
+            if not all(support[(a, b, cs)]):                     # carrières des deux prouvées : deux vrais joueurs du même nom, pas un problème
+                homonyms.append((f"{names[a]} / {names[b]} — {club[cs]}", ""))
+        else:
+            twice.append((f"{names[a]} / {names[b]} — {club[cs]}", ""))
     out += _listed("squad_duplicate", "blocking", [(s, "même joueur cité deux fois dans l'effectif (`openfootball reconcile` les fusionne)") for s, _ in twice],
                    "joueurs cités deux fois dans un même effectif")
     out += _listed("squad_homonym", "warning", [(s, "deux identités différentes pour la même place : l'une est un homonyme lié à tort, la carrière ne tranche pas") for s, _ in homonyms],
@@ -130,6 +139,20 @@ def run_audit(con: duckdb.DuckDBPyConnection) -> list[Problem]:
         WHERE w.club_id IS NOT NULL AND NOT list_contains(f.clubs, w.club_id)
           AND NOT EXISTS (SELECT 1 FROM club_season x JOIN season sx ON sx.id = x.season_id WHERE x.club_id = w.club_id AND sx.start_year = w.season_start)
         ORDER BY co.code, w.season_start""", "vainqueurs sans aucun effectif cette saison alors que la compétition est connue en entier")
+
+    if con.execute("SELECT count(*) FROM top_scorer").fetchone()[0]:         # classements des buteurs (lus par `topscorers`) : chaque saison passée des cinq premières divisions a le sien, du plus au moins de buts
+        out += _scan(con, "top_scorer_missing", "warning", f"""
+            SELECT co.code || ' ' || s.label, 'saison terminée sans classement des buteurs'
+            FROM competition co CROSS JOIN season s
+            WHERE co.code IN ('ENG-PL', 'ESP-LL', 'ITA-SA', 'DEU-BL', 'FRA-L1') AND s.start_year BETWEEN 2010 AND {date.today().year - 1 - (0 if date.today().month >= 8 else 1)}
+              AND EXISTS (SELECT 1 FROM club_season cs WHERE cs.competition_id = co.id AND cs.season_id = s.id)
+              AND NOT EXISTS (SELECT 1 FROM top_scorer t WHERE t.competition_code = co.code AND t.season_label = s.label)
+            ORDER BY co.code, s.label""", "saisons terminées sans classement des buteurs")
+        out += _scan(con, "top_scorer_order", "blocking", """
+            SELECT competition_code || ' ' || season_label || ' ' || player_name, 'rang incohérent avec les buts : ' || goals || ' buts, rang ' || rank
+            FROM top_scorer t WHERE EXISTS (SELECT 1 FROM top_scorer u WHERE u.competition_code = t.competition_code AND u.season_label = t.season_label
+                                            AND ((u.goals > t.goals AND u.rank >= t.rank) OR (u.goals = t.goals AND u.rank <> t.rank)))""",
+                     "classements de buteurs dont le rang ne suit pas les buts")
 
     out += _scan(con, "stats_before_birth", "warning", f"""
         SELECT p.name || ' (né en ' || year(b.birth_date) || ')', 'statistiques dès ' || min(s.season) || ' : homonymes fusionnés ou date de naissance fausse ?'

@@ -365,6 +365,28 @@ TABLES_EN: dict[str, tuple[str, str, dict[str, str]]] = {
             "birth_place": "Birthplace (city); empty if Wikipedia already has one.",
         },
     ),
+    "top_scorer": (
+        "Top scorers of each league and each season, read from the \"Top scorers\" table of the season's Wikipedia page (no other computation). "
+        "The rank is recomputed from the goals (standard competition ranking: 1, 2, 2, 4).", "(competition, season, rank, player_name)",
+        {
+            "competition": "Competition code (`ENG-PL`, `FRA-L1`…).",
+            "season": "Season, for example `2017/18`.",
+            "rank": "Rank on goals; ties share the same rank.",
+            "player_name": "Player name as Wikipedia writes it.",
+            "player_qid": "Wikidata QID of the player when the database knows them, otherwise empty.",
+            "club_name": "Club as written in the table (the one of that season).",
+            "club": "Title of the club's Wikipedia page when known, otherwise empty (join with `club.wikipedia_title`).",
+            "goals": "League goals scored.",
+        },
+    ),
+    "player_external_id": (
+        "External identifiers of a player read from Wikidata (never guessed): Transfermarkt (P2446) and FBref (P5750). One row per player that has at least one; they serve as outbound links.", "(player_qid)",
+        {
+            "player_qid": "Wikidata QID of the player (join key with `player_profile.player_qid`).",
+            "transfermarkt_id": "Transfermarkt identifier (`https://www.transfermarkt.com/-/profil/spieler/<id>`); empty if none.",
+            "fbref_id": "FBref identifier (`https://fbref.com/en/players/<id>/`); empty if none.",
+        },
+    ),
     "player_profile": (
         "Profile read from the English Wikipedia infobox: full name, birthplace, height, death and **photo** (one row per player "
         "with at least one of these). Values **published as is by Wikipedia, unverified**.",

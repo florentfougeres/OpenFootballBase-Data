@@ -62,7 +62,7 @@ squad.player_qid ──< career.player_qid, national.player_qid, birth.player_qi
 
 Effectif d'un club pour une saison : **une ligne = un joueur dans l'effectif d'un club cette saison**. Un fichier par saison (`squad/<saison>.<sha8>.parquet`). Les joueurs prêtés ailleurs (`loan_out`) n'y figurent pas.
 
-- Fichiers : 27 fichiers (un par saison), ex. `squad/2026-27.d67c81a8.parquet` — **303 137 lignes**
+- Fichiers : 27 fichiers (un par saison), ex. `squad/2026-27.03e74a93.parquet` — **300 390 lignes**
 - Clé : (season, club, player_qid ou player)
 
 | Colonne | Type | Description |
@@ -94,7 +94,7 @@ Effectif d'un club pour une saison : **une ligne = un joueur dans l'effectif d'u
 
 Une ligne = **un club dans un championnat pour une saison** (avec ou sans effectif). Un fichier par saison (`club_season/<saison>.<sha8>.parquet`).
 
-- Fichiers : 27 fichiers (un par saison), ex. `club_season/2026-27.dcfcdcfc.parquet` — **26 674 lignes**
+- Fichiers : 27 fichiers (un par saison), ex. `club_season/2026-27.f1cd6e1f.parquet` — **26 674 lignes**
 - Clé : (season, club)
 
 | Colonne | Type | Description |
@@ -112,7 +112,7 @@ Une ligne = **un club dans un championnat pour une saison** (avec ou sans effect
 
 Les pages « saison du club » dont l'effectif est l'**union** : un effectif est lu sur toutes les langues du pays (langue du pays d'abord, puis anglais, italien…) pour être le plus complet possible. **Une ligne = une page utilisée.**
 
-- Fichiers : `squad_source/squad_source.09a9582a.parquet` — **13 125 lignes**
+- Fichiers : `squad_source/squad_source.d3a0cd20.parquet` — **13 125 lignes**
 - Clé : (season, club, source_lang)
 
 | Colonne | Type | Description |
@@ -131,7 +131,7 @@ Les pages « saison du club » dont l'effectif est l'**union** : un effectif est
 
 Tous les clubs de football connus (≈ 43 000, source : Wikidata). `has_squads` distingue les clubs dont on a les effectifs.
 
-- Fichiers : `club/club.e96b131f.parquet` — **44 970 lignes**
+- Fichiers : `club/club.8985c057.parquet` — **44 983 lignes**
 - Clé : wikidata_qid (wikipedia_title est aussi unique quand il existe)
 
 | Colonne | Type | Description |
@@ -172,7 +172,7 @@ Tous les clubs de football connus (≈ 43 000, source : Wikidata). `has_squads` 
 
 Les compétitions couvertes : championnats du périmètre, championnats partiels de pays hors périmètre, et coupes d'Europe (`UEFA-CL`).
 
-- Fichiers : `competition/competition.34d7328b.parquet` — **152 lignes**
+- Fichiers : `competition/competition.aa65a820.parquet` — **152 lignes**
 - Clé : code
 
 | Colonne | Type | Description |
@@ -191,7 +191,7 @@ Les compétitions couvertes : championnats du périmètre, championnats partiels
 
 Les pays couverts par `competition`.
 
-- Fichiers : `country/country.27c6bb64.parquet` — **116 lignes**
+- Fichiers : `country/country.c2d43633.parquet` — **116 lignes**
 - Clé : code
 
 | Colonne | Type | Description |
@@ -205,7 +205,7 @@ Les pays couverts par `competition`.
 
 Les saisons présentes et leur état.
 
-- Fichiers : `season/season.c115f1cd.parquet` — **27 lignes**
+- Fichiers : `season/season.a28d16c4.parquet` — **27 lignes**
 - Clé : label
 
 | Colonne | Type | Description |
@@ -219,7 +219,7 @@ Les saisons présentes et leur état.
 
 Clubs participant à une compétition, par saison : les clubs du championnat (d'après `club_season`) **et** ceux qui y participent en plus de leur championnat (Ligue des champions, table `competition_entry`).
 
-- Fichiers : `competition_club/competition_club.4fb79ec7.parquet` — **30 184 lignes**
+- Fichiers : `competition_club/competition_club.5eb08a4e.parquet` — **30 184 lignes**
 - Clé : (season, competition, club)
 
 | Colonne | Type | Description |
@@ -232,7 +232,7 @@ Clubs participant à une compétition, par saison : les clubs du championnat (d'
 
 Effectifs introuvables dont l'absence a été **validée explicitement** (la source n'existe pas).
 
-- Fichiers : `known_gap/known_gap.82d48a15.parquet` — **997 lignes**
+- Fichiers : `known_gap/known_gap.2e22296a.parquet` — **1 006 lignes**
 - Clé : (season, club)
 
 | Colonne | Type | Description |
@@ -245,7 +245,7 @@ Effectifs introuvables dont l'absence a été **validée explicitement** (la sou
 
 Carrière senior d'un joueur, lue dans l'infobox de sa page Wikipedia **anglaise** : **une ligne = un passage dans un club**.
 
-- Fichiers : `career/career.610d22a7.parquet` — **479 110 lignes**
+- Fichiers : `career/career.12be0dfc.parquet` — **485 765 lignes**
 - Clé : (player_qid ou player, seq)
 
 | Colonne | Type | Description |
@@ -270,7 +270,7 @@ Carrière senior d'un joueur, lue dans l'infobox de sa page Wikipedia **anglaise
 
 Sélections en équipe nationale (jeunes comprises), lues dans l'infobox : **une ligne = une équipe**.
 
-- Fichiers : `national/national.282c935f.parquet` — **89 931 lignes**
+- Fichiers : `national/national.481fd655.parquet` — **90 838 lignes**
 - Clé : (player_qid ou player, seq)
 
 | Colonne | Type | Description |
@@ -288,7 +288,7 @@ Sélections en équipe nationale (jeunes comprises), lues dans l'infobox : **une
 
 Statistiques de carrière **par club, saison et compétition**, lues dans la section « Career statistics » de la page Wikipedia anglaise du joueur (joueurs de clubs de Ligue des champions des 7 grands pays, depuis 2010). **Une ligne = un club, une saison, un groupe de compétition.** Valeurs **publiées telles quelles, non vérifiées** ; une cellule vide ou « — » est vide, pas zéro.
 
-- Fichiers : `stat_club/stat_club.836ae4f0.parquet` — **911 346 lignes**
+- Fichiers : `stat_club/stat_club.610725e7.parquet` — **911 539 lignes**
 - Clé : (player_qid ou player, seq)
 
 | Colonne | Type | Description |
@@ -310,7 +310,7 @@ Statistiques de carrière **par club, saison et compétition**, lues dans la sec
 
 Statistiques en sélection **par équipe nationale et année**, lues dans la section « Career statistics » (même périmètre que `stat_club`). Valeurs **publiées telles quelles, non vérifiées**.
 
-- Fichiers : `stat_national/stat_national.29b483bf.parquet` — **49 546 lignes**
+- Fichiers : `stat_national/stat_national.80662b6d.parquet` — **49 677 lignes**
 - Clé : (player_qid ou player, seq)
 
 | Colonne | Type | Description |
@@ -329,7 +329,7 @@ Statistiques en sélection **par équipe nationale et année**, lues dans la sec
 
 Provenance des statistiques : la page lue pour chaque joueur (une ligne par joueur lu, même sans tableau).
 
-- Fichiers : `stat_source/stat_source.f9af8ccd.parquet` — **49 525 lignes**
+- Fichiers : `stat_source/stat_source.cb237ef7.parquet` — **49 417 lignes**
 - Clé : (player_qid ou player)
 
 | Colonne | Type | Description |
@@ -345,7 +345,7 @@ Provenance des statistiques : la page lue pour chaque joueur (une ligne par joue
 
 Palmarès : le vainqueur de chaque saison d'une compétition, d'après Wikidata (une ligne par vainqueur ; un co-vainqueur donne deux lignes).
 
-- Fichiers : `winner/winner.def31300.parquet` — **5 615 lignes**
+- Fichiers : `winner/winner.152033d1.parquet` — **5 613 lignes**
 - Clé : (competition, season_start, winner_qid)
 
 | Colonne | Type | Description |
@@ -361,7 +361,7 @@ Palmarès : le vainqueur de chaque saison d'une compétition, d'après Wikidata 
 
 Classements de récompenses individuelles : une ligne par joueur classé d'une édition du Ballon d'Or (depuis 2000), d'après la page Wikipedia de l'édition.
 
-- Fichiers : `award/award.74d261bb.parquet` — **609 lignes**
+- Fichiers : `award/award.e18a6e69.parquet` — **609 lignes**
 - Clé : (award, year, rank, player_name)
 
 | Colonne | Type | Description |
@@ -379,7 +379,7 @@ Classements de récompenses individuelles : une ligne par joueur classé d'une �
 
 Titres en équipe nationale : pour chaque édition d'une compétition de sélections (Coupe du monde, Euro, Copa América, Coupe d'Afrique des nations, Coupe d'Asie, Gold Cup, Coupe des confédérations), la liste des joueurs de l'équipe victorieuse, d'après la page Wikipedia des effectifs de l'édition. Un joueur de la liste a pu ne pas jouer.
 
-- Fichiers : `national_title/national_title.4eff70be.parquet` — **2 975 lignes**
+- Fichiers : `national_title/national_title.f8610ca9.parquet` — **2 975 lignes**
 - Clé : (competition, year, player_name)
 
 | Colonne | Type | Description |
@@ -392,11 +392,171 @@ Titres en équipe nationale : pour chaque édition d'une compétition de sélect
 | `shirt_number` | INTEGER | Numéro de maillot dans la liste ; vide si non donné. |
 | `position` | VARCHAR | Poste écrit dans la liste (`GK`, `DF`, `MF`, `FW`). |
 
+### `coach`
+
+Entraîneurs : un mandat par ligne (entraîneur d'un club entre deux dates), d'après la propriété Wikidata « entraîneur ». Les mandats sans date de début ne sont pas publiés ; les entraîneurs intérimaires y figurent comme les autres.
+
+- Fichiers : `coach/coach.dbf04afe.parquet` — **8 099 lignes**
+- Clé : (club, coach_qid, start_date)
+
+| Colonne | Type | Description |
+|---|---|---|
+| `club` | VARCHAR | Titre de la page Wikipedia du club dans `club`. |
+| `coach_qid` | VARCHAR | QID Wikidata de l'entraîneur (clé de jointure avec `squad.player_qid` quand il a aussi été joueur de notre base). |
+| `coach_name` | VARCHAR | Nom de l'entraîneur (libellé Wikidata). |
+| `start_date` | DATE | Début du mandat. |
+| `end_date` | DATE | Fin du mandat ; vide si le mandat est en cours ou si la fin n'est pas renseignée. |
+
+### `match`
+
+Matchs : résultats, calendriers et détails (stade, affluence, arbitre) des championnats, de la Ligue des champions, des Coupes du monde, des Euros, de la Coupe du monde des clubs, de la Libertadores, du dépôt `world` et des sélections nationales depuis 1872. **Source : les données ouvertes du projet OpenFootball (github.com/openfootball, CC0)**, pas Wikipedia ; elles couvrent les saisons récentes et certaines ligues seulement. Un match sans score n'est pas encore joué.
+
+- Fichiers : `match/match.be917553.parquet` — **165 719 lignes**
+- Clé : (match_id)
+
+| Colonne | Type | Description |
+|---|---|---|
+| `match_id` | INTEGER | Identifiant du match (clé de jointure avec `match_goal`). |
+| `competition` | VARCHAR | Code de notre compétition (`ENG-PL`…) ou `OF:<clé>` quand la compétition n'existe pas chez nous (`OF:worldcup`, `OF:euro`, `OF:en.3`…). |
+| `season` | VARCHAR | Saison (`2025/26`) ou année du tournoi (`2022`). |
+| `round` | VARCHAR | Journée ou tour tel qu'écrit par la source (`Matchday 1`, `Round of 16`). |
+| `group_name` | VARCHAR | Groupe (tournois). |
+| `match_date` | DATE | Date du match. |
+| `kickoff` | VARCHAR | Heure du coup d'envoi, locale, telle qu'écrite par la source. |
+| `home_name` | VARCHAR | Équipe qui reçoit, telle qu'écrite par la source. |
+| `away_name` | VARCHAR | Équipe qui se déplace, telle qu'écrite par la source. |
+| `home_club` | VARCHAR | Titre de la page Wikipedia du club qui reçoit dans `club` ; vide si aucun club de la compétition ne porte ce nom (et pour les sélections). |
+| `away_club` | VARCHAR | Titre de la page Wikipedia du club qui se déplace dans `club` ; vide si aucun club ne correspond (et pour les sélections). |
+| `ft_home` | INTEGER | Buts de l'équipe qui reçoit à la fin du temps réglementaire. |
+| `ft_away` | INTEGER | Buts de l'équipe qui se déplace à la fin du temps réglementaire. |
+| `ht_home` | INTEGER | Buts de l'équipe qui reçoit à la mi-temps. |
+| `ht_away` | INTEGER | Buts de l'équipe qui se déplace à la mi-temps. |
+| `et_home` | INTEGER | Buts de l'équipe qui reçoit après prolongation (cumul). |
+| `et_away` | INTEGER | Buts de l'équipe qui se déplace après prolongation (cumul). |
+| `pen_home` | INTEGER | Tirs au but marqués par l'équipe qui reçoit. |
+| `pen_away` | INTEGER | Tirs au but marqués par l'équipe qui se déplace. |
+| `ground` | VARCHAR | Stade, tel qu'écrit par la source. |
+| `attendance` | INTEGER | Affluence. |
+| `referee` | VARCHAR | Arbitre central. |
+| `source_ref` | VARCHAR | Fichier du dépôt OpenFootball d'où vient la ligne (ou page Wikipedia pour un match créé depuis sa matrice). |
+| `result_source` | VARCHAR | Provenance du score : vide = la source de matchs OpenFootball ; `wikipedia` = la matrice de résultats de la page Wikipedia de la saison (saison en cours, quand OpenFootball a du retard). En cas de désaccord, le score d'OpenFootball est gardé. |
+
+### `match_competition`
+
+Nom des compétitions `OF:*` de `match` (celles que nous n'avons pas comme championnat), lu dans l'en-tête du fichier source ; en anglais.
+
+- Fichiers : `match_competition/match_competition.420f56fa.parquet` — **33 lignes**
+- Clé : (code)
+
+| Colonne | Type | Description |
+|---|---|---|
+| `code` | VARCHAR | Code `OF:<clé>` tel que dans `match.competition`. |
+| `name` | VARCHAR | Nom de la compétition, sans l'année (`FIFA World Cup`, `English League One`). |
+| `wikipedia_title` | VARCHAR | Titre de la page Wikipedia anglaise de la compétition ; les qualifications reprennent la page du tournoi qu'elles préparent. Vide pour les matchs amicaux. |
+| `logo_url` | VARCHAR | Miniature du logo (champ `image` de l'infobox, hébergée par Wikimedia) ; souvent non libre : voir `logo_license`. |
+| `logo_license` | VARCHAR | Licence du fichier du logo, telle que Wikimedia la déclare. |
+
+### `match_goal`
+
+Buteurs d'un match, quand la source les donne (Coupes du monde, Euros).
+
+- Fichiers : `match_goal/match_goal.1e2d8175.parquet` — **48 147 lignes**
+- Clé : (match_id, seq)
+
+| Colonne | Type | Description |
+|---|---|---|
+| `match_id` | INTEGER | Match (`match.match_id`). |
+| `seq` | INTEGER | Rang du but dans la liste de la source. |
+| `side` | VARCHAR | `home` ou `away` : l'équipe à qui le but est compté (pour un but contre son camp, celle qui en profite). |
+| `player_name` | VARCHAR | Nom du buteur, tel qu'écrit par la source. |
+| `player_qid` | VARCHAR | QID Wikidata du joueur de notre base à qui ce nom a été rattaché (effectif du club cette saison-là, sans ambiguïté) ; vide sinon : le nom seul ne désigne personne. |
+| `minute` | VARCHAR | Minute (`37`, `90+4`). |
+| `kind` | VARCHAR | `goal`, `penalty` ou `own_goal`. |
+
+### `match_lineup`
+
+Compositions d'un match, quand la source les donne (6 championnats : Premier League, Bundesliga, Liga, Serie A, Ligue 1, Bundesliga autrichienne, depuis 2025/26).
+
+- Fichiers : `match_lineup/match_lineup.3554b000.parquet` — **56 249 lignes**
+- Clé : (match_id, side, seq)
+
+| Colonne | Type | Description |
+|---|---|---|
+| `match_id` | INTEGER | Match (`match.match_id`). |
+| `side` | VARCHAR | `home` ou `away`. |
+| `seq` | INTEGER | Ordre d'écriture de la source : le gardien d'abord, puis les lignes, puis les remplaçants. |
+| `player_name` | VARCHAR | Nom tel qu'écrit par la source (la casse varie : `MOHAMED SALAH`, `Hugo EKITIKE`) ; pas de clé de joueur. |
+| `player_qid` | VARCHAR | QID Wikidata du joueur de notre base à qui ce nom a été rattaché (effectif du club cette saison-là, sans ambiguïté) ; vide sinon : le nom seul ne désigne personne. |
+| `role` | VARCHAR | `start` (titulaire) ou `sub` (entré en cours de match). |
+| `minute` | VARCHAR | Minute d'entrée d'un remplaçant ; pour un titulaire remplacé, minute de sa sortie ; vide sinon. |
+| `captain` | BOOLEAN | Capitaine. |
+
+### `match_card`
+
+Cartons d'un match, quand la source donne le détail.
+
+- Fichiers : `match_card/match_card.783a1d02.parquet` — **7 227 lignes**
+- Clé : (match_id, seq)
+
+| Colonne | Type | Description |
+|---|---|---|
+| `match_id` | INTEGER | Match (`match.match_id`). |
+| `seq` | INTEGER | Rang dans la liste de la source. |
+| `side` | VARCHAR | `home` ou `away` : l'équipe du joueur sanctionné. |
+| `player_name` | VARCHAR | Joueur, tel qu'écrit par la source. |
+| `player_qid` | VARCHAR | QID Wikidata du joueur de notre base à qui ce nom a été rattaché (effectif du club cette saison-là, sans ambiguïté) ; vide sinon : le nom seul ne désigne personne. |
+| `minute` | VARCHAR | Minute. |
+| `kind` | VARCHAR | `yellow` ou `red`. |
+
+### `player_openfootball`
+
+Taille et lieu de naissance venus du dépôt `players` d'OpenFootball (domaine public), **seulement là où le profil Wikipedia (`player_profile`) n'en a pas** : une valeur Wikipedia n'est jamais écrasée. Un joueur n'est relié que par son nom ET sa date de naissance exacte, jamais par le nom seul.
+
+- Fichiers : `player_openfootball/player_openfootball.337eb1e3.parquet` — **667 lignes**
+- Clé : (player_qid)
+
+| Colonne | Type | Description |
+|---|---|---|
+| `player_qid` | VARCHAR | QID Wikidata du joueur (clé de jointure avec `player_profile.player_qid`). |
+| `height_cm` | INTEGER | Taille en centimètres ; vide si Wikipedia en a déjà une. |
+| `birth_place` | VARCHAR | Lieu de naissance (ville) ; vide si Wikipedia en a déjà un. |
+
+### `player_external_id`
+
+Identifiants externes d'un joueur lus sur Wikidata (jamais devinés) : Transfermarkt (P2446) et FBref (P5750). Une ligne par joueur qui en a au moins un ; ils servent de liens sortants.
+
+- Fichiers : `player_external_id/player_external_id.5905f6c1.parquet` — **61 835 lignes**
+- Clé : (player_qid)
+
+| Colonne | Type | Description |
+|---|---|---|
+| `player_qid` | VARCHAR | QID Wikidata du joueur (clé de jointure avec `player_profile.player_qid`). |
+| `transfermarkt_id` | VARCHAR | Identifiant Transfermarkt (`https://www.transfermarkt.com/-/profil/spieler/<id>`) ; vide s'il n'y en a pas. |
+| `fbref_id` | VARCHAR | Identifiant FBref (`https://fbref.com/en/players/<id>/`) ; vide s'il n'y en a pas. |
+
+### `top_scorer`
+
+Classement des buteurs de chaque championnat et de chaque saison, lu dans le tableau « Top scorers » de la page Wikipedia de la saison (aucun autre calcul). Le rang est recalculé sur les buts (classement standard : 1, 2, 2, 4).
+
+- Fichiers : `top_scorer/top_scorer.224e7cdf.parquet` — **1 757 lignes**
+- Clé : (competition, season, rank, player_name)
+
+| Colonne | Type | Description |
+|---|---|---|
+| `competition` | VARCHAR | Code de la compétition (`ENG-PL`, `FRA-L1`…). |
+| `season` | VARCHAR | Saison, par exemple `2017/18`. |
+| `rank` | INTEGER | Rang sur les buts ; les ex æquo partagent le même rang. |
+| `player_name` | VARCHAR | Nom du joueur, tel que Wikipedia l'écrit. |
+| `player_qid` | VARCHAR | QID Wikidata du joueur quand il est connu de la base, sinon vide. |
+| `club_name` | VARCHAR | Club tel qu'écrit dans le tableau (celui de la saison). |
+| `club` | VARCHAR | Titre de la page Wikipedia du club quand il est connu, sinon vide (jointure avec `club.wikipedia_title`). |
+| `goals` | INTEGER | Buts marqués en championnat. |
+
 ### `player_profile`
 
 Profil lu dans l'infobox Wikipedia anglaise : nom complet, lieu de naissance, taille, décès et **photo** (une ligne par joueur ayant au moins une de ces informations). Valeurs **publiées telles quelles par Wikipedia, non vérifiées**.
 
-- Fichiers : `player_profile/player_profile.22615009.parquet` — **59 703 lignes**
+- Fichiers : `player_profile/player_profile.60cbf6cf.parquet` — **60 603 lignes**
 - Clé : (player_qid ou player)
 
 | Colonne | Type | Description |
@@ -417,7 +577,7 @@ Profil lu dans l'infobox Wikipedia anglaise : nom complet, lieu de naissance, ta
 
 Dates de naissance (Wikidata P569) des joueurs identifiés.
 
-- Fichiers : `birth/birth.699629f9.parquet` — **62 371 lignes**
+- Fichiers : `birth/birth.8095f521.parquet` — **63 005 lignes**
 - Clé : player_qid
 
 | Colonne | Type | Description |
@@ -430,7 +590,7 @@ Dates de naissance (Wikidata P569) des joueurs identifiés.
 
 Page Wikipedia d'un club ou d'un joueur dans chaque langue (en, fr, it, de, es pour les clubs ; en, fr pour les joueurs).
 
-- Fichiers : `entity_wiki/entity_wiki.d4260a9a.parquet` — **99 695 lignes**
+- Fichiers : `entity_wiki/entity_wiki.83ce0dd9.parquet` — **100 720 lignes**
 - Clé : (qid, lang)
 
 | Colonne | Type | Description |
@@ -438,4 +598,19 @@ Page Wikipedia d'un club ou d'un joueur dans chaque langue (en, fr, it, de, es p
 | `qid` | VARCHAR | QID Wikidata du club ou du joueur. |
 | `lang` | VARCHAR | Code de langue Wikipedia. |
 | `title` | VARCHAR | Titre de la page dans cette langue. |
+
+
+## Tables de travail (`work`)
+
+Fichiers `work_*/` du manifeste (clé `work`) : ce que la base de travail garde en plus du Parquet lu par le site. Ils servent à reconstruire une base COMPLÈTE (`openfootball restore-db`) et ne sont pas lus par le site. Ils portent des clés naturelles (titre du club, saison, QID du joueur ou son nom), jamais de numéro interne.
+
+| Fichiers | lignes | Description |
+|---|---|---|
+| `work_squad_movement/work_squad_movement.d0266bbd.parquet` | 62 201 | mouvements de joueurs : date, fenêtre de transferts, club d'origine ou de destination, prêt ou transfert |
+| `work_loan_out/work_loan_out.73d10adf.parquet` | 24 139 | joueurs prêtés ailleurs (absents de l'effectif de leur club d'origine, donc de `squad`) |
+| `work_entity_label/work_entity_label.f36f4bd8.parquet` | 9 042 | libellés anglais et français des entités Wikidata (villes, stades, championnats, clubs) |
+| `work_player_alias/work_player_alias.c402c405.parquet` | 2 | rustines de noms de joueurs vers leur page Wikipedia |
+| `work_amendment_log/work_amendment_log.0c2fe472.parquet` | 785 | journal des corrections apportées à des saisons ou à des clubs-saisons |
+| `work_competition_wikidata/work_competition_wikidata.e5980bb3.parquet` | 92 | identifiant Wikidata des compétitions |
+| `work_club_work/work_club_work.94d61dcc.parquet` | 41 769 | identifiants Wikidata des clubs (pays, ville, stade, championnat) dont les libellés sont dans `entity_label` |
 

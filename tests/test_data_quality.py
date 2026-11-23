@@ -236,6 +236,41 @@ def test_two_identified_homonyms_are_left_alone_when_the_career_cannot_tell_them
     assert c.execute("SELECT count(*) FROM player_club_season").fetchone()[0] == 2
 
 
+def test_two_real_homonyms_whose_careers_both_have_the_club_are_left_alone_and_not_flagged():
+    from openfootball.audit import _identity_problems
+    from openfootball.reconcile import merge_squad_duplicates
+    c = _squad([(1, "Henrique", "Q10294723", None, None), (2, "Henrique", "Q14244926", None, None)])
+    _career(c, 1, "Galatasaray S.K. (football)", 2016, 2018)
+    _career(c, 2, "Galatasaray S.K. (football)", 2017, 2019)               # les deux y étaient : deux vrais joueurs du même nom
+    r = merge_squad_duplicates(c)
+    assert (r.merged, r.removed, r.unresolved) == (0, 0, 0)
+    assert c.execute("SELECT count(*) FROM player_club_season").fetchone()[0] == 2
+    assert not [p for p in _identity_problems(c) if p.check == "squad_homonym"]
+
+
+def _title_only_pair(c):
+    for pid, name in ((1, "Christan Enemark"), (2, "Christian Enemark")):
+        c.execute("INSERT INTO player (id, name, link_lang, link_title) VALUES (?, ?, 'en', ?)", [pid, name, name])
+        c.execute("INSERT INTO player_club_season (id, player_id, club_season_id, shirt_number, position_code, confidence, source, stint) "
+                  "VALUES (?, ?, 1, 28, 'DF', 'attested', 'wikipedia_season', 'full')", [pid, pid])
+
+
+def test_two_unproven_links_with_a_one_letter_variant_and_the_same_shirt_are_one_player():
+    from openfootball.reconcile import merge_squad_duplicates
+    c = _squad([])
+    _title_only_pair(c)
+    assert merge_squad_duplicates(c).merged == 1
+    assert c.execute("SELECT count(*) FROM player_club_season").fetchone()[0] == 1
+
+
+def test_two_links_without_qid_stay_two_people_when_one_has_a_career():
+    from openfootball.reconcile import merge_squad_duplicates
+    c = _squad([])
+    _title_only_pair(c)
+    _career(c, 1, "Brøndby IF", 2016, 2018)
+    assert merge_squad_duplicates(c).merged == 0
+
+
 def test_a_link_without_qid_and_a_qid_for_the_same_name_and_shirt_are_one_player():
     from openfootball.reconcile import merge_squad_duplicates
     c = _squad([(1, "Igor Karpovich", "Q5994587", 15, None)])
