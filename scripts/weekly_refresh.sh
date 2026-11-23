@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Mise à jour hebdomadaire (cron) : relit les joueurs encore en activité (infobox de carrière + tableaux de statistiques Wikipedia),
 # réconcilie, exporte et PUBLIE une release GitHub `data-X.Y.(Z+1)` puis redéploie le site.
-# Usage : scripts/weekly_refresh.sh          (variables : REPO_DIR, RESUME=1 reprend un passage interrompu, PUBLISH=release|draft|none, défaut release ; draft = brouillon à publier à la main)
+# Usage : scripts/weekly_refresh.sh          (variables : REPO_DIR, RESUME=1 reprend un passage interrompu, RESUME=export saute à l'audit et à l'export, PUBLISH=release|draft|none, défaut release ; draft = brouillon à publier à la main)
 set -euo pipefail
 cd "${REPO_DIR:-$(cd "$(dirname "$0")/.." && pwd)}"
 export OPENFOOTBALL_CONTACT="https://github.com/florentfougeres/OpenFootballBase"
@@ -33,6 +33,8 @@ $OF reconcile --names --wikidata --infobox --infobox-direct-only    # + pages Wi
 $OF stats --active --fresh --cache cache/wikipedia_stats_v2   # tableaux « Career statistics » des joueurs en activité, relus
 fi
 
+# RESUME=export : la base est déjà enrichie (étapes ci-dessous faites) ; on reprend à la fusion des doublons, l'audit et l'export.
+if [ "${RESUME:-}" != export ]; then
 if [ -n "${RESUME:-}" ]; then
 $OF enrich --what careerclubs labels imagecheck clubfacts playerids
 else
@@ -43,6 +45,8 @@ $OF matches --fresh-seasons 2 || echo "matchs : échec ignoré (GitHub indisponi
 $OF topscorers --current-only || echo "buteurs : échec ignoré (Wikipedia indisponible), table de la release précédente conservée"   # classement des buteurs de chaque championnat (saison en cours relue)
 $OF enrich --what leaguelogos                          # logos et pages Wikipedia des compétitions (y compris celles de `matches`, après lui : il crée leurs noms)
 $OF players-data || echo "joueurs OpenFootball : échec ignoré, table de la release précédente conservée"   # taille et lieu de naissance manquants (nom + date de naissance)
+fi
+$OF reconcile                                          # sans option : fusionne les doublons d'effectif et nettoie les noms (pas de réseau), juste avant l'audit qui les bloquerait
 $OF progress
 $OF audit                                               # cohérence de toute la base : un problème bloquant arrête avant l'export
 
