@@ -308,14 +308,16 @@ HOME_CLUBS = ("Q7156", "Q18656", "Q8682", "Q1130849", "Q9616", "Q1422", "Q9617",
 
 
 def _write_home(con, out: Path, manifest: dict) -> dict:
-    """`home.<sha8>.json` : de quoi afficher l'accueil sans attendre le moteur de requêtes (DuckDB-WASM, ≈ 8 Mo)."""
+    """`home.<sha8>.json` : de quoi afficher l'accueil sans attendre le moteur de requêtes (DuckDB-WASM, ≈ 8 Mo).
+    `countries[].clubs` compte les clubs qui ont de VRAIS joueurs : une ligne `club_season` sans joueur (résultats, classement) ne fait pas un effectif,
+    sinon la Bulgarie (53 clubs, 4 avec un effectif) passait avant les Pays-Bas (30 sur 31)."""
     squads = ", ".join(f"'{(out / s['files']['squad']['path']).as_posix()}'" for s in manifest["seasons"].values())
     players = con.execute(f"SELECT count(DISTINCT coalesce(player_qid, 'n:' || player)) FROM read_parquet([{squads}], union_by_name=true)").fetchone()[0] if squads else 0
     countries = [{"code": c, "name_en": en, "name_fr": fr, "flag": flag, "comps": comps, "clubs": clubs}
                  for c, en, fr, flag, comps, clubs in con.execute("""
         SELECT ce.code, ce.name_en, ce.name_fr, ce.flag,
                (SELECT count(*) FROM competition x WHERE x.country_code = ce.code),
-               (SELECT count(*) FROM club c WHERE c.country_code = ce.code AND EXISTS (SELECT 1 FROM club_season cs WHERE cs.club_id = c.id))
+               (SELECT count(*) FROM club c WHERE c.country_code = ce.code AND EXISTS (SELECT 1 FROM club_season cs JOIN player_club_season p ON p.club_season_id = cs.id WHERE cs.club_id = c.id))
         FROM country_export ce ORDER BY ce.code""").fetchall() if comps]
     clubs = [{"wikipedia_title": t, "name_en": en, "name_fr": fr, "logo_url": logo, "colors_hex": colors, "season": season}
              for t, en, fr, logo, colors, season in con.execute(f"""
