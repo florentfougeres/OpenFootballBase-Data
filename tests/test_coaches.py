@@ -1,7 +1,7 @@
 """Entraîneurs : lecture des mandats Wikidata (début, fin, doublons) et écriture de `club_coach`."""
 import duckdb
 
-from openfootball.coaches import import_coaches, parse_coaches
+from openfootball.coaches import import_coaches, parse_coaches, parse_flags, parse_profiles
 from openfootball.db import migrate
 
 CLUB = "http://www.wikidata.org/entity/Q1893"
@@ -53,3 +53,37 @@ def test_import_remplace_la_table():
     assert "wd:Q1893" in asked[0] and "wd:Q2 " not in asked[0]                    # seuls les clubs à effectifs sont interrogés
     assert con.execute("SELECT coach_name, end_date IS NULL FROM club_coach ORDER BY start_date").fetchall() == [("Stefano Pioli", False), ("Siniša Mihajlović", True)]
     assert import_coaches(con, Wd(), log=lambda _: None) == 2                      # idempotent
+
+
+def test_drapeau_pays_pour_le_sport_avant_la_citoyennete():
+    rows = [{"coach": "http://www.wikidata.org/entity/Q1", "sportLabel": "England", "citLabel": "United Kingdom"},
+            {"coach": "http://www.wikidata.org/entity/Q2", "citLabel": "France"},
+            {"coach": "http://www.wikidata.org/entity/Q3", "citLabel": "Q42"}]                          # libellé absent : le service renvoie le QID
+    got = parse_flags(rows)
+    assert got["Q1"] == "gb-eng" and got["Q2"] == "fr" and "Q3" not in got
+
+
+def test_import_ecrit_le_drapeau():
+    con = duckdb.connect(":memory:")
+    migrate(con)
+    con.execute("INSERT INTO country VALUES ('ITA', 'Italie', 'Italy')")
+    con.execute("INSERT INTO competition (id, code, name_en, name_fr, country_code, level) VALUES (1, 'ITA-SA', 'Serie A', 'Serie A', 'ITA', 1)")
+    con.execute("INSERT INTO season (id, start_year, label, status) VALUES (1, 2011, '2011/12', 'backfill')")
+    con.execute("INSERT INTO club (id, wikidata_qid, wikipedia_title, name_en) VALUES (1, 'Q1893', 'Bologna F.C. 1909', 'Bologna')")
+    con.execute("INSERT INTO club_season (id, club_id, season_id, competition_id) VALUES (1, 1, 1, 1)")
+
+    class Wd:
+        def query(self, sparql):
+            assert "P1532" in sparql and "P27" in sparql
+            return [{**_row(), "citLabel": "Italy"}]
+    import_coaches(con, Wd(), log=lambda _: None)
+    assert con.execute("SELECT flag FROM club_coach").fetchall() == [("it",)]
+
+
+def test_fiche_naissance_jour_ou_annee_lieu_et_pages():
+    rows = [{"c": "http://www.wikidata.org/entity/Q1", "birth": "1970-05-08T00:00:00Z", "prec": "11", "placeLabel": "Gijón", "en": "Luis Enrique", "fr": "Luis Enrique Martínez"},
+            {"c": "http://www.wikidata.org/entity/Q2", "birth": "1955-01-01T00:00:00Z", "prec": "9", "placeLabel": "Q42"},          # année seule ; lieu sans libellé
+            {"c": "http://www.wikidata.org/entity/Q3"}]
+    got = parse_profiles(rows)
+    assert str(got["Q1"][0]) == "1970-05-08" and got["Q1"][1] is None and got["Q1"][2] == "Gijón" and got["Q1"][3:] == ("Luis Enrique", "Luis Enrique Martínez")
+    assert got["Q2"] == (None, 1955, None, None, None) and got["Q3"] == (None, None, None, None, None)

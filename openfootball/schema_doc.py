@@ -281,6 +281,18 @@ TABLES: dict[str, tuple[str, str, dict[str, str]]] = {
             "coach_name": "Nom de l'entraîneur (libellé Wikidata).",
             "start_date": "Début du mandat.",
             "end_date": "Fin du mandat ; vide si le mandat est en cours ou si la fin n'est pas renseignée.",
+            "flag": "Code du drapeau du pays de l'entraîneur (`fr`, `gb-eng`…), d'après Wikidata : pays pour le sport (P1532) à défaut citoyenneté (P27) ; vide si inconnu. Même valeur sur tous ses mandats.",
+        },
+    ),
+    "coach_profile": (
+        "Fiche d'un entraîneur (Wikidata) : naissance et pages Wikipedia, une ligne par entraîneur de `coach`. Publiée seulement quand `coaches` les a lues.", "(coach_qid)",
+        {
+            "coach_qid": "QID Wikidata de l'entraîneur (clé de jointure avec `coach.coach_qid`).",
+            "birth_date": "Date de naissance, seulement quand Wikidata donne le jour.",
+            "birth_year": "Année de naissance, quand Wikidata ne donne que l'année.",
+            "birth_place": "Lieu de naissance (libellé anglais Wikidata).",
+            "wikipedia_en": "Titre de la page Wikipedia anglaise.",
+            "wikipedia_fr": "Titre de la page Wikipedia française.",
         },
     ),
     "match": (
@@ -429,7 +441,7 @@ TABLES: dict[str, tuple[str, str, dict[str, str]]] = {
     ),
 }
 
-ORDER = ["squad", "club_season", "squad_source", "club", "competition", "country", "season", "competition_club", "known_gap", "career", "national", "stat_club", "stat_national", "stat_source", "winner", "award", "national_title", "coach", "match", "match_competition", "match_goal", "match_lineup", "match_card", "player_openfootball", "player_external_id", "top_scorer", "player_profile", "birth", "entity_wiki"]
+ORDER = ["squad", "club_season", "squad_source", "club", "competition", "country", "season", "competition_club", "known_gap", "career", "national", "stat_club", "stat_national", "stat_source", "winner", "award", "national_title", "coach", "coach_profile", "match", "match_competition", "match_goal", "match_lineup", "match_card", "player_openfootball", "player_external_id", "top_scorer", "player_profile", "birth", "entity_wiki"]
 
 INTRO = """# OpenFootballBase — dictionnaire de données
 

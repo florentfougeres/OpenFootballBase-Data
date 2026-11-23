@@ -306,3 +306,25 @@ def drop_summer_departures(con: duckdb.DuckDBPyConnection) -> int:
         con.execute("DELETE FROM squad_row_source WHERE club_season_id = ? AND player_id = ?", [cs_id, player_id])
         con.execute("DELETE FROM player_club_season WHERE id = ?", [pcs_id])
     return len(rows)
+
+
+def drop_unlisted_departures(con: duckdb.DuckDBPyConnection) -> int:
+    """Retire d'un club le joueur que seule la section « Altas y bajas » / « Bajas » d'une page espagnole cite, sans aucun mouvement connu
+    (ni arrivée, ni départ, ni prêt) et qui figure dans un autre club la même saison : cette section liste les arrivées ET les départs de l'été,
+    et la page n'en dit pas le sens ; une ligne sans mouvement qui retrouve le joueur ailleurs est un départ (Rashford : prêt au Barça fini,
+    de retour à Manchester United, cité encore dans les « bajas » du Barça 2026/27). Un joueur qui n'est nulle part ailleurs n'est pas touché ;
+    les saisons figées non plus."""
+    rows = con.execute("""
+        SELECT pcs.id, pcs.club_season_id, pcs.player_id
+        FROM player_club_season pcs
+        JOIN club_season cs ON cs.id = pcs.club_season_id JOIN season s ON s.id = cs.season_id
+        WHERE s.status <> 'frozen' AND pcs.stint = 'unknown'
+          AND (pcs.source_section = 'Altas y bajas' OR pcs.source_section LIKE 'Bajas%')
+          AND NOT EXISTS (SELECT 1 FROM squad_movement m WHERE m.club_season_id = pcs.club_season_id AND m.player_id = pcs.player_id)
+          AND NOT EXISTS (SELECT 1 FROM squad_row_source r WHERE r.club_season_id = pcs.club_season_id AND r.player_id = pcs.player_id AND r.source_lang <> 'es')
+          AND EXISTS (SELECT 1 FROM player_club_season o JOIN club_season ocs ON ocs.id = o.club_season_id
+                      WHERE o.player_id = pcs.player_id AND ocs.season_id = cs.season_id AND ocs.id <> cs.id)""").fetchall()
+    for pcs_id, cs_id, player_id in rows:
+        con.execute("DELETE FROM squad_row_source WHERE club_season_id = ? AND player_id = ?", [cs_id, player_id])
+        con.execute("DELETE FROM player_club_season WHERE id = ?", [pcs_id])
+    return len(rows)

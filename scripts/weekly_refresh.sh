@@ -27,13 +27,13 @@ if [ -z "${RESUME:-}" ]; then
 # Base de travail reconstruite à chaque passage depuis la dernière release publiée : on repart toujours de ce que le site affiche, sans dérive ni reste d'un essai.
 if [ -f "$DB" ]; then mv -f "$DB" data/work/openfootball.avant.duckdb; fi   # une seule copie de sécurité (la base d'avant), écrasée à chaque passage
 $OF restore-db --release "$LAST" --db "$DB"
+.venv/bin/python scripts/squad_fingerprint.py "$DB" > data/work/squad.fingerprint     # référence : les effectifs tels que la release les publie
 
 $OF careers --active --fresh                           # infobox de carrière + profil
-$OF reconcile --names --wikidata --infobox --infobox-direct-only    # + pages Wikipedia retrouvées par le titre (lecture groupée, sans la recherche lente)
 $OF stats --active --fresh --cache cache/wikipedia_stats_v2   # tableaux « Career statistics » des joueurs en activité, relus
 fi
 
-# RESUME=export : la base est déjà enrichie (étapes ci-dessous faites) ; on reprend à la fusion des doublons, l'audit et l'export.
+# RESUME=export : la base est déjà enrichie (étapes ci-dessous faites) ; on reprend à l'audit et à l'export.
 if [ "${RESUME:-}" != export ]; then
 if [ -n "${RESUME:-}" ]; then
 $OF enrich --what careerclubs labels imagecheck clubfacts playerids
@@ -46,9 +46,13 @@ $OF topscorers --current-only || echo "buteurs : échec ignoré (Wikipedia indis
 $OF enrich --what leaguelogos                          # logos et pages Wikipedia des compétitions (y compris celles de `matches`, après lui : il crée leurs noms)
 $OF players-data || echo "joueurs OpenFootball : échec ignoré, table de la release précédente conservée"   # taille et lieu de naissance manquants (nom + date de naissance)
 fi
-$OF reconcile                                          # sans option : fusionne les doublons d'effectif et nettoie les noms (pas de réseau), juste avant l'audit qui les bloquerait
 $OF progress
 $OF audit                                               # cohérence de toute la base : un problème bloquant arrête avant l'export
+# Le passage hebdomadaire met à jour statistiques, infobox (carrières), résultats, entraîneurs et classements : JAMAIS les effectifs (ils ne bougent qu'à la mise à jour du mercato).
+# On le vérifie : si l'empreinte des effectifs a changé depuis la release, on s'arrête avant l'export (ALLOW_SQUAD_CHANGES=1 pour passer outre, en connaissance de cause).
+if [ -f data/work/squad.fingerprint ] && [ -z "${ALLOW_SQUAD_CHANGES:-}" ]; then
+  [ "$(.venv/bin/python scripts/squad_fingerprint.py "$DB")" = "$(cat data/work/squad.fingerprint)" ] || { echo "les effectifs ont changé pendant le passage hebdomadaire (ils ne doivent pas) : export refusé. Voir docs/*/weekly-refresh.md"; exit 1; }
+fi
 
 mkdir -p /tmp/prev && gh release download "$LAST" --pattern "*-data.tar.gz" --dir /tmp/prev --clobber
 tar -xzOf /tmp/prev/*-data.tar.gz manifest.json > /tmp/prev/manifest.json

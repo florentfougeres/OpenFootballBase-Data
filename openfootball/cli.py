@@ -28,7 +28,7 @@ from openfootball.nationals import import_national_titles
 from openfootball.honours import drop_vacant, ensure_cups, fill_winners_from_wikipedia, import_winners, relink_winner_clubs, resolve_competition_qids
 from openfootball.reconstruct import reconstruct, reconstruct_from_careers
 from openfootball.stats import COUNTRIES, StatsClient, clean_implausible_apps, clean_implausible_goals, import_stats, select_active_players, select_all_players, select_players, select_without_stats
-from openfootball.transfers import mark_moves_from_careers, apply_transfers, drop_stale_current_rows, drop_summer_departures
+from openfootball.transfers import mark_moves_from_careers, apply_transfers, drop_stale_current_rows, drop_summer_departures, drop_unlisted_departures
 from openfootball.reconcile import (apply_player_aliases, clean_player_names, drop_impossible_births, merge_split_players, remove_orphan_players, merge_squad_duplicates, normalize_player_names, reconcile_by_infobox, reconcile_by_name,
                                     reconcile_by_wikidata, reconcile_players, remove_non_players, purge_misplaced_squads, split_implausible_stays)
 from openfootball.export import export_all, pack, verify_continuity
@@ -615,6 +615,17 @@ def progress_cmd(args: argparse.Namespace) -> int:
     return 0
 
 
+def clean_squads_cmd(args: argparse.Namespace) -> int:
+    """Nettoie les effectifs des départs restés listés (sans réseau). À lancer à la main à la mise à jour du mercato, JAMAIS dans le passage hebdomadaire."""
+    con = connect(args.db)
+    migrate(con)
+    for label, fn in (("départs d'été présents ailleurs la même saison", drop_summer_departures),
+                      ("départs cités seulement par « Altas y bajas », sans mouvement, présents ailleurs", drop_unlisted_departures),
+                      ("joueurs de la saison en cours partis ailleurs (encore listés par une seule langue en retard)", drop_stale_current_rows)):
+        print(f"{fn(con)} joueurs retirés : {label}")
+    return 0
+
+
 def transfers_cmd(args: argparse.Namespace) -> int:
     """Statuts datés (arrivé/parti en cours de saison, prêts) d'après les tableaux de transferts des pages anglaises."""
     con = connect(args.db)
@@ -626,6 +637,9 @@ def transfers_cmd(args: argparse.Namespace) -> int:
     summer = drop_summer_departures(con)
     if summer:
         print(f"{summer} joueurs retirés d'un club qu'ils ont quitté avant la saison (fenêtre d'été), présents ailleurs la même saison")
+    unlisted = drop_unlisted_departures(con)
+    if unlisted:
+        print(f"{unlisted} joueurs retirés d'un club que seule la section « Altas y bajas » citait (départ sans mouvement connu), présents ailleurs la même saison")
     stale = drop_stale_current_rows(con)
     if stale:
         print(f"{stale} joueurs retirés de la saison en cours (partis ailleurs, encore listés par une seule langue en retard)")
@@ -965,6 +979,9 @@ def main(argv: list[str] | None = None) -> int:
     tr.add_argument("--season", type=int, help="une seule saison (année de début) ; par défaut toutes les saisons non figées")
     tr.add_argument("--cache", default="cache/wikipedia")
     tr.set_defaults(func=transfers_cmd)
+    cs = sub.add_parser("clean-squads", help="retire des effectifs les départs restés listés (mercato, à la main ; pas dans le passage hebdomadaire)")
+    cs.add_argument("--db", default=DB_DEFAULT)
+    cs.set_defaults(func=clean_squads_cmd)
     rc = sub.add_parser("reconstruct", help="effectif reconstitué (saison d'avant − sortants + arrivants) pour des club-saisons sans effectif")
     rc.add_argument("--db", default=DB_DEFAULT)
     rc.add_argument("--season", type=int, nargs="+", required=True)

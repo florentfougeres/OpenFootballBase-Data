@@ -276,6 +276,18 @@ TABLES_EN: dict[str, tuple[str, str, dict[str, str]]] = {
             "coach_name": "Coach name (Wikidata label).",
             "start_date": "Start of the tenure.",
             "end_date": "End of the tenure; empty if the tenure is ongoing or the end is not recorded.",
+            "flag": "Flag code of the coach's country (`fr`, `gb-eng`…), from Wikidata: country for sport (P1532), else citizenship (P27); empty if unknown. Same value on all of his tenures.",
+        },
+    ),
+    "coach_profile": (
+        "Coach profile (Wikidata): birth and Wikipedia pages, one row per coach of `coach`. Published only when `coaches` has read them.", "(coach_qid)",
+        {
+            "coach_qid": "Wikidata QID of the coach (join key with `coach.coach_qid`).",
+            "birth_date": "Date of birth, only when Wikidata gives the day.",
+            "birth_year": "Year of birth, when Wikidata gives the year only.",
+            "birth_place": "Place of birth (Wikidata English label).",
+            "wikipedia_en": "Title of the English Wikipedia page.",
+            "wikipedia_fr": "Title of the French Wikipedia page.",
         },
     ),
     "match": (

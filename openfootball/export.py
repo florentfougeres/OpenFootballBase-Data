@@ -114,8 +114,11 @@ ORDER BY t.competition_code, t.season_label, t.rank, t.player_name"""
 _NATIONAL_TITLE = """
 SELECT competition, year, team, player_name, player_qid, shirt_number, position FROM national_title ORDER BY competition, year, player_name"""
 
+_COACH_PROFILE = """
+SELECT coach_qid, birth_date, birth_year, birth_place, wikipedia_en, wikipedia_fr FROM coach_profile ORDER BY coach_qid"""
+
 _COACH = """
-SELECT cl.wikipedia_title AS club, k.coach_qid, k.coach_name, k.start_date, k.end_date
+SELECT cl.wikipedia_title AS club, k.coach_qid, k.coach_name, k.start_date, k.end_date, k.flag
 FROM club_coach k JOIN club cl ON cl.id = k.club_id ORDER BY cl.wikipedia_title, k.start_date, k.coach_name"""
 
 _MATCH = """
@@ -263,6 +266,8 @@ def export_all(con: duckdb.DuckDBPyConnection, out_dir: str | Path) -> dict:
         manifest["tables"]["national_title"] = _write(con, _NATIONAL_TITLE, out, "national_title", "national_title")
     if con.execute("SELECT count(*) FROM club_coach").fetchone()[0]:                         # entraîneurs : publiés seulement si `coaches` a été lancé
         manifest["tables"]["coach"] = _write(con, _COACH, out, "coach", "coach")
+        if con.execute("SELECT count(*) FROM coach_profile").fetchone()[0]:                  # fiches (naissance, Wikipedia) : publiées seulement si `coaches` les a lues
+            manifest["tables"]["coach_profile"] = _write(con, _COACH_PROFILE, out, "coach_profile", "coach_profile")
     if con.execute("SELECT count(*) FROM match").fetchone()[0]:                              # matchs : publiés seulement si `matches` a été lancé
         manifest["tables"]["match"] = _write(con, _MATCH, out, "match", "match")
         manifest["tables"]["match_competition"] = _write(con, _MATCH_COMPETITION, out, "match_competition", "match_competition")
