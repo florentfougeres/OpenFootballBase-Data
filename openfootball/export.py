@@ -118,7 +118,7 @@ _COACH_PROFILE = """
 SELECT coach_qid, birth_date, birth_year, birth_place, wikipedia_en, wikipedia_fr FROM coach_profile ORDER BY coach_qid"""
 
 _COACH_CAREER = """
-SELECT coach_qid, seq, start_year, end_year, years_raw, team_name, team_link FROM coach_career ORDER BY coach_qid, seq"""
+SELECT coach_qid, seq, start_year, end_year, years_raw, team_name, team_link, assistant FROM coach_career ORDER BY coach_qid, seq"""
 
 _COACH = """
 SELECT cl.wikipedia_title AS club, k.coach_qid, k.coach_name, k.start_date, k.end_date, k.flag

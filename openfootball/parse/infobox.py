@@ -129,6 +129,7 @@ class ManagerSpell:
     years_raw: str
     team_name: str
     team_link: str | None
+    assistant: bool = False       # « Italy (assistant) » : adjoint, pas entraîneur principal
 
 
 def parse_managerial(wikitext: str) -> list[ManagerSpell]:
@@ -139,12 +140,14 @@ def parse_managerial(wikitext: str) -> list[ManagerSpell]:
         idx = sorted({int(m.group(1)) for k in p if (m := re.fullmatch(r"manager_?(?:years|clubs)(\d+)", k))})
         out: list[ManagerSpell] = []
         for i in idx:
-            name, link = _club(p.get(f"manager_clubs{i}") or p.get(f"managerclubs{i}", ""))
+            raw = p.get(f"manager_clubs{i}") or p.get(f"managerclubs{i}", "")
+            name, link = _club(raw)
             if not name:
                 continue
             years_raw = re.sub(r"<[^>]+>|\{\{.*?\}\}", "", p.get(f"manager_years{i}") or p.get(f"manageryears{i}", "")).strip()
             start, end = parse_years(years_raw)
-            out.append(ManagerSpell(seq=i, start_year=start, end_year=end, years_raw=years_raw, team_name=name, team_link=link))
+            out.append(ManagerSpell(seq=i, start_year=start, end_year=end, years_raw=years_raw, team_name=name, team_link=link,
+                                  assistant=bool(re.search(r"\bassistant\b", raw, re.I))))
         return out
     return []
 

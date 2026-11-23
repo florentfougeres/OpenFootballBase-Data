@@ -95,8 +95,8 @@ def test_carriere_d_entraineur_lue_dans_l_infobox():
           "| manager_years1 = 2006–2014 | manager_clubs1 = [[Germany national football team|Germany]] (assistant) "
           "| manageryears2 = 2019–2021 | managerclubs2 = [[FC Bayern Munich]] | manageryears3 = 2024– | managerclubs3 = [[FC Barcelona]] }}")
     got = parse_managerial(wt)
-    assert [(s.seq, s.start_year, s.end_year, s.team_name, s.team_link) for s in got] == [
-        (1, 2006, 2014, "Germany", "Germany national football team"), (2, 2019, 2021, "FC Bayern Munich", "FC Bayern Munich"), (3, 2024, None, "FC Barcelona", "FC Barcelona")]
+    assert [(s.seq, s.start_year, s.end_year, s.team_name, s.team_link, s.assistant) for s in got] == [
+        (1, 2006, 2014, "Germany", "Germany national football team", True), (2, 2019, 2021, "FC Bayern Munich", "FC Bayern Munich", False), (3, 2024, None, "FC Barcelona", "FC Barcelona", False)]
 
 
 def test_import_carrieres_ecrit_la_table():

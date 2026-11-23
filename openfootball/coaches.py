@@ -148,7 +148,7 @@ def import_coach_careers(con: duckdb.DuckDBPyConnection, wp, *, log: Callable[[s
             if not page.exists or not page.wikitext:
                 continue
             for sp in parse_managerial(page.wikitext):
-                rows.append((titles[page.title], sp.seq, sp.start_year, sp.end_year, sp.years_raw, sp.team_name, sp.team_link))
+                rows.append((titles[page.title], sp.seq, sp.start_year, sp.end_year, sp.years_raw, sp.team_name, sp.team_link, sp.assistant))
         log(f"  {min(i + 200, len(todo))}/{len(todo)} pages d'entraîneurs lues")
     if not rows:
         log("  carrières d'entraîneurs : aucune ligne lue, table inchangée")
@@ -156,7 +156,7 @@ def import_coach_careers(con: duckdb.DuckDBPyConnection, wp, *, log: Callable[[s
     con.execute("BEGIN")
     try:
         con.execute("DELETE FROM coach_career")
-        con.executemany("INSERT INTO coach_career VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT DO NOTHING", rows)
+        con.executemany("INSERT INTO coach_career VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT DO NOTHING", rows)
         con.execute("COMMIT")
     except Exception:
         con.execute("ROLLBACK")

@@ -305,6 +305,7 @@ TABLES: dict[str, tuple[str, str, dict[str, str]]] = {
             "years_raw": "Années telles qu'écrites dans l'infobox.",
             "team_name": "Équipe entraînée (clubs, sélections).",
             "team_link": "Titre de la page Wikipedia de l'équipe quand l'infobox la lie.",
+            "assistant": "Vrai pour un poste d'adjoint (« (assistant) » dans l'infobox) : pas entraîneur principal.",
         },
     ),
     "match": (
