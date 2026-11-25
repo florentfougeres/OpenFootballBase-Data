@@ -346,7 +346,7 @@ def complete_clubs_cmd(args: argparse.Namespace) -> int:
     for year in args.season:
         print(f"=== Clubs européens à compléter {year}/{str(year + 1)[2:]} ===")
         try:
-            res = complete_national_clubs(con, year, wp=wp, lang_clients=langs, wd=wd, qid_lookup=lambda ts: club_qids(wp, ts), refresh=args.refresh)
+            res = complete_national_clubs(con, year, wp=wp, lang_clients=langs, wd=wd, qid_lookup=lambda ts: club_qids(wp, ts), refresh=args.refresh, unseen=args.unseen)
         except SeasonFrozen as exc:
             raise SystemExit(f"refusé : {exc}")
         except Exception as exc:
@@ -895,6 +895,7 @@ def main(argv: list[str] | None = None) -> int:
     cc_.add_argument("--db", default=DB_DEFAULT)
     cc_.add_argument("--season", type=int, nargs="+", required=True)
     cc_.add_argument("--refresh", action="store_true", help="relit aussi les clubs qui ont déjà un effectif (avec --fresh : mise à jour de la saison en cours)")
+    cc_.add_argument("--unseen", action="store_true", help="tente aussi les clubs qui n'ont encore aucun effectif dans aucune saison (championnats hors périmètre : Pologne, Serbie…)")
     cc_.add_argument("--fresh", action="store_true", help="ignore le cache Wikipedia : relit les pages")
     cc_.add_argument("--cache", default="cache/wikipedia")
     cc_.add_argument("--wd-cache", default="cache/wikidata")

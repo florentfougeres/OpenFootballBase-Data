@@ -171,6 +171,9 @@ def test_complete_national_clubs_fills_other_seasons_of_a_club_seen_in_europe(co
     res = complete_national_clubs(con, 2022, wp=wp, **args)
     assert [r.club for r in res] == ["Club 1"] and res[0].players == 14                # Club 2 n'est pas touché
     assert complete_national_clubs(con, 2022, wp=wp, **args) == []                      # idempotent
+    wp2 = FakeWiki({"2022–23 Club 2 season": page("2022–23 Club 2 season", squad("Autre"))})
+    res = complete_national_clubs(con, 2022, wp=wp2, unseen=True, **args)               # unseen : Club 2, jamais lu, est tenté aussi
+    assert [r.club for r in res] == ["Club 2"] and res[0].players == 14
 
 
 def test_leagues_of_ignores_domestic_cup():
