@@ -148,6 +148,10 @@ def remove_non_players(con: duckdb.DuckDBPyConnection) -> int:
 _ENTITY_TITLE = re.compile(r"federation|fédération|association|roster slots?|soviet|republic|national (football )?team", re.I)
 
 
+# Particules d'un nom de personne (« Victor Hugo dos Santos de Sa », « Juan Carlos de la Cruz ») : elles ne comptent pas dans les six mots d'une liste de noms de famille collés.
+_NAME_PARTICLES = {"de", "da", "do", "dos", "das", "del", "della", "di", "du", "van", "von", "der", "den", "la", "le", "el", "al", "bin", "ben", "ibn", "y", "e"}
+
+
 def non_players(con) -> list[tuple[int, str, str]]:
     """(id, nom, raison) des « joueurs » qui n'en sont pas : un nom de tableau (date, « Loan ») ; ou un club, une fédération, un code pays (« FRA », « AFC Ajax »)
     dont la colonne a été lue comme un nom et que l'on a même rattaché à une page — jamais une personne : pas de naissance, pas de carrière, le QID est celui d'un club
@@ -159,7 +163,7 @@ def non_players(con) -> list[tuple[int, str, str]]:
             SELECT p.id, p.name, coalesce(p.wikidata_qid, w.qid), p.link_title, (w.player_id IS NULL AND p.link_title IS NULL)
             FROM player p LEFT JOIN player_wikidata w ON w.player_id = p.id""").fetchall():
         if loose:
-            if looks_like_non_player(name) or len(name.split()) >= 6:           # six mots sans lien : une liste de noms de famille collés, pas une personne
+            if looks_like_non_player(name) or sum(1 for w in name.split() if w.lower() not in _NAME_PARTICLES) >= 6:           # six mots sans lien : une liste de noms de famille collés, pas une personne
                 out.append((pid, name, "ce n'est pas un nom de joueur (date, note ou liste lue dans un tableau de l'effectif)"))
         elif (re.fullmatch(r"[A-Z]{2,4}", name) or qid in club_qids or (title and _ENTITY_TITLE.search(title))) \
                 and not con.execute("SELECT 1 FROM player_birth WHERE player_id = ? UNION ALL SELECT 1 FROM player_career WHERE player_id = ? LIMIT 1", [pid, pid]).fetchone():

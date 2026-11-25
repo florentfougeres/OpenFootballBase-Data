@@ -353,6 +353,8 @@ def test_dates_notes_and_lists_of_surnames_are_not_players():
     c.execute("INSERT INTO player_birth VALUES (2, DATE '1990-01-01', 11)")
     assert remove_non_players(c) == 1                                                  # six mots sans lien : retiré ; la même longueur avec un QID reste
     assert _names(c) == ["Juan Carlos Ramón de la Cruz"]
+    c = _squad([(1, "Victor Hugo dos Santos de Sa", None, 3, None)])
+    assert remove_non_players(c) == 0                                                  # six mots dont deux particules, sans lien : un vrai joueur brésilien, pas une liste de noms
 
 
 def test_impossible_birth_dates_are_erased_and_orphan_players_removed():

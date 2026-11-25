@@ -4,8 +4,13 @@
 
 Les releases de données publiées, la plus récente d'abord. Les noms suivent le [versionnage sémantique](https://semver.org/lang/fr/) : **majeure** = changement de schéma incompatible, **mineure** = nouvelles données (championnat, pays, coupe, table, colonne), **correctif** = corrections de données. Chaque release s'appelle `Data X.Y.Z` avec le tag `data-X.Y.Z` ([comment publier](publishing-a-release.md)). Les changements du site et des outils qui ne sont pas liés à une release de données sont listés sous « Site et outils ».
 
-## Prochaine release de données (non publiée)
+## Data 1.25.0 — 2026-11-25
+- **Effectifs 2026/27 : 378 clubs de plus** (Pologne, Albanie, Azerbaïdjan, Malte, Suède…) grâce à `complete-clubs --unseen` : 9 925 → 10 303 effectifs établis sur 26 674 (38,6 %). Sept doublons de translittération (FC Kudrivka, Universitatea Cluj) ont été fusionnés et un faux joueur (« Captain », lu dans un tableau) retiré.
+- **Règle des « six mots »** : un nom sans lien de six mots ou plus n'est plus pris pour une liste de noms de famille collés quand certains mots sont des particules (de, dos, da, van, von…) : « Victor Hugo dos Santos de Sa » (Paide Linnameeskond) est un vrai joueur.
 - **`complete-clubs --unseen`** : tente aussi, pour la saison en cours, les clubs qui n'ont encore AUCUN effectif nulle part (Pologne, Serbie, Roumanie… : championnats que `backfill` ne couvre pas ; 659 club-saisons 2026/27 « non validé » au 23 nov.). Seul un effectif plausible (≥ 11 joueurs dont un gardien) est écrit ; la page du club (section « Current squad ») sert de source.
+
+
+## Data 1.24.1 à 1.24.6 — 2026-11-21 au 2026-11-23
 - **Les clubs féminins ne sont plus publiés** : 1 417 clubs de la table `club` (catégorie Wikidata « football féminin », « (women) », « W.F.C. », « Féminin », « Femminile », « Frauen », « Ladies »…) sont écartés de l'export sauf s'ils ont un effectif (3 faux positifs mixtes ou d'autres sports restent). Le site couvre le football masculin et sa recherche les listait (« Paris Saint-Germain Féminin »).
 - **`coach_career.assistant`** (migration 0032) : vrai pour les lignes d'infobox qui sont des postes d'adjoint (« Italy (assistant) » ; 3 967 sur 36 676), pour ne pas les compter comme mandats d'entraîneur principal.
 - **Carrière d'entraîneur d'après l'infobox Wikipedia** (table `coach_career`, migration 0031, remplie par l'étape `coaches`) : les lignes « Teams managed » de la page anglaise de chaque entraîneur, clubs **et sélections**, postes d'adjoint compris (36 676 lignes pour 3 862 entraîneurs). Les mandats Wikidata (`coach`) ne couvrent que les clubs à effectifs : Hansi Flick montrait deux équipes au lieu de cinq.

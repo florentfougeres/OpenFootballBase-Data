@@ -4,8 +4,13 @@
 
 Published data releases, newest first. Names follow [semantic versioning](https://semver.org): **major** = incompatible schema change, **minor** = new data (league, country, cup, table, column), **patch** = data fixes. Each release is `Data X.Y.Z` with tag `data-X.Y.Z` ([how to publish](publishing-a-release.md)). Changes to the site and tooling that are not tied to a data release are listed under "Site and tooling".
 
-## Next data release (unpublished)
+## Data 1.25.0 — 2026-11-25
+- **2026/27 squads: 378 more clubs** (Poland, Albania, Azerbaijan, Malta, Sweden…) thanks to `complete-clubs --unseen`: 9,925 → 10,303 established squads out of 26,674 (38.6%). Seven transliteration duplicates (FC Kudrivka, Universitatea Cluj) were merged and one fake player ("Captain", read from a table) removed.
+- **"Six words" rule**: an unlinked name of six or more words is no longer taken for a list of glued surnames when some words are particles (de, dos, da, van, von…): "Victor Hugo dos Santos de Sa" (Paide Linnameeskond) is a real player.
 - **`complete-clubs --unseen`**: for the current season, also tries clubs that have NO squad anywhere yet (Poland, Serbia, Romania… leagues `backfill` does not cover; 659 "unvalidated" 2026/27 club-seasons on 23 Nov). Only a plausible squad (≥ 11 players including a goalkeeper) is written; the club page ("Current squad" section) is the source.
+
+
+## Data 1.24.1 to 1.24.6 — 2026-11-21 to 2026-11-23
 - **Women's clubs are no longer published**: 1,417 clubs of the `club` table (Wikidata category "women's football", "(women)", "W.F.C.", "Féminin", "Femminile", "Frauen", "Ladies"…) are left out of the export unless they have a squad (3 mixed or non-football false positives stay). The site covers men's football and its search listed them ("Paris Saint-Germain Féminin").
 - **`coach_career.assistant`** (migration 0032): true for the infobox lines that are assistant posts ("Italy (assistant)"; 3,967 of 36,676), so they are not counted as head-coach tenures.
 - **Coaching career from the Wikipedia infobox** (`coach_career` table, migration 0031, filled by the `coaches` step): the "Teams managed" lines of each coach's English page, clubs **and national teams**, assistant roles included (36,676 lines for 3,862 coaches). The Wikidata tenures (`coach`) only cover the clubs with squads, so Hansi Flick showed two teams instead of five.
