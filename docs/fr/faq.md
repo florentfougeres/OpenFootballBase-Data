@@ -24,7 +24,7 @@ Les saisons terminées ne changent pas. La **saison en cours** est rafraîchie �
 L'âge demande une date de naissance connue au jour près sur Wikidata ; une carrière demande que le joueur soit relié à une page Wikipedia anglaise. Les joueurs lus sur des pages sans liens (français, espagnol, italien) ne sont rattachés par leur nom que si une carrière le prouve, sinon ils restent non identifiés.
 
 ## Que contiennent les 20 pays en « liste seulement » ?
-La première division et ses clubs pour chaque saison depuis 2010, sans effectifs (pour le moment). Passer un pays aux effectifs, c'est une ligne dans son fichier de périmètre, puis un backfill ([adding-clubs-and-seasons.md](adding-clubs-and-seasons.md)).
+La première division et ses clubs pour chaque saison depuis 2010, plus les effectifs 2026/27 (`complete-clubs --season 2026 --unseen`) ; les saisons antérieures n'ont pas d'effectifs. Les lire toutes, c'est une ligne dans son fichier de périmètre, puis un backfill ([adding-clubs-and-seasons.md](adding-clubs-and-seasons.md)).
 
 ## Pourquoi pas de résultats de matchs ni de classements ?
 La règle du produit est Wikipedia + Wikidata seulement ; les données de matchs demanderaient une troisième source. C'est dans la [feuille de route](roadmap.md) comme idée, en attente de cette décision.

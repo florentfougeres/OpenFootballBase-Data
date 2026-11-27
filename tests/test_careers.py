@@ -24,6 +24,10 @@ def test_parse_years(raw, expected):
     assert parse_years(raw) == expected
 
 
+def test_parse_years_reads_the_minus_sign_as_a_dash():
+    assert parse_years("2023− ") == (2023, None) and parse_years("2019−2022") == (2019, 2022)
+
+
 def test_joshua_king_senior_career_matches_wikipedia_structure():
     s = parse_career(lead("king_lead"))
     assert len(s) == 13

@@ -24,7 +24,7 @@ Finished seasons do not change. The **current season** is refreshed at each rele
 Age needs a birth date known to the day on Wikidata; a career needs the player to be linked to an English Wikipedia page. Players read from pages without links (French, Spanish, Italian) are matched by name only when a career proves it, otherwise they stay unidentified.
 
 ## What do the 20 "list only" countries contain?
-The first division and its clubs for each season since 2010, without squads (for now). Flipping a country to squads is a one-line change in its scope file, followed by a backfill ([adding-clubs-and-seasons.md](adding-clubs-and-seasons.md)).
+The first division and its clubs for each season since 2010, plus the 2026/27 squads (`complete-clubs --season 2026 --unseen`); earlier seasons have no squads. Reading them all is a one-line change in its scope file, followed by a backfill ([adding-clubs-and-seasons.md](adding-clubs-and-seasons.md)).
 
 ## Why is there no match result or standing?
 The product's rule is Wikipedia + Wikidata only; match data would need a third source. It is on the [roadmap](roadmap.md) as an idea, pending that decision.

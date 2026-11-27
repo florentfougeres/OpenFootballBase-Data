@@ -143,7 +143,7 @@ def import_careers_by_qid(con: duckdb.DuckDBPyConnection, client, wd, *,
 _ACTIVE = """AND p.id IN (
     SELECT pcs.player_id FROM player_club_season pcs JOIN club_season cs ON cs.id = pcs.club_season_id
       JOIN season s ON s.id = cs.season_id WHERE s.status = 'open'
-    UNION SELECT player_id FROM player_career WHERE regexp_matches(years_raw, '[–-]\\s*$'))"""
+    UNION SELECT player_id FROM player_career WHERE regexp_matches(years_raw, '[–−-]\\s*$'))"""
 
 
 def import_careers(con: duckdb.DuckDBPyConnection, client, *, refresh: bool = False, active_only: bool = False,

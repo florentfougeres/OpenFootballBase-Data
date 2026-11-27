@@ -8,7 +8,7 @@ Last update: 2026-11-13. Size: **S** (a few hours), **M** (one to two days), **L
 ## Done recently
 
 - 18 leagues with squads (first and second divisions of 5 countries, Belgium, Portugal, Netherlands, Türkiye, MLS, Saudi Arabia, Brazil, Argentina), 2010 → 2026.
-- **20 countries in "list only" mode** (league and clubs per season, no squads): Mexico, Japan, Australia, China, South Korea, Colombia, Ecuador, Chile, Egypt, Peru, Morocco, South Africa, Qatar, United Arab Emirates, Paraguay, Uruguay, Bolivia, Algeria, Vietnam, Tunisia.
+- **20 countries in "list only" mode** (league and clubs per season; squads for 2026/27 only): Mexico, Japan, Australia, China, South Korea, Colombia, Ecuador, Chile, Egypt, Peru, Morocco, South Africa, Qatar, United Arab Emirates, Paraguay, Uruguay, Bolivia, Algeria, Vietnam, Tunisia.
 - European cups: participants and squads (Champions League, Europa League, Conference League); **Copa Libertadores, CAF and AFC Champions Leagues: participants** since 2010.
 - Site: club and squad on one page, movements from one season to the next, dashboard per league, Players section, coverage heat map, career timeline, CSV download, Competitions page grouped by confederation.
 - **Rebuild a DuckDB database from a release**: `openfootball restore-db` ([guide](restoring-a-database.md)), with SHA-256 verification.

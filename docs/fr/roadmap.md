@@ -8,7 +8,7 @@ Dernière mise à jour : 2026-11-13. Taille : **S** (quelques heures), **M** (un
 ## Fait récemment
 
 - 18 championnats à effectifs (premières et deuxièmes divisions de 5 pays, Belgique, Portugal, Pays-Bas, Turquie, MLS, Arabie saoudite, Brésil, Argentine), 2010 → 2026.
-- **20 pays en « liste seulement »** (championnat et clubs par saison, sans effectifs) : Mexique, Japon, Australie, Chine, Corée du Sud, Colombie, Équateur, Chili, Égypte, Pérou, Maroc, Afrique du Sud, Qatar, Émirats arabes unis, Paraguay, Uruguay, Bolivie, Algérie, Vietnam, Tunisie.
+- **20 pays en « liste seulement »** (championnat et clubs par saison ; effectifs pour 2026/27 seulement) : Mexique, Japon, Australie, Chine, Corée du Sud, Colombie, Équateur, Chili, Égypte, Pérou, Maroc, Afrique du Sud, Qatar, Émirats arabes unis, Paraguay, Uruguay, Bolivie, Algérie, Vietnam, Tunisie.
 - Coupes d'Europe : participants et effectifs (Ligue des champions, Ligue Europa, Ligue Conférence) ; **Copa Libertadores, Ligues des champions CAF et AFC : participants** depuis 2010.
 - Site : fiche club et effectif en une page, mouvements d'une saison à l'autre, tableau de bord par championnat, section Joueurs, couverture en grille de chaleur, frise de carrière, téléchargement CSV, page Compétitions par confédération.
 - **Reconstituer une base DuckDB à partir d'une release** : `openfootball restore-db` ([guide](restoring-a-database.md)), avec contrôle SHA-256.

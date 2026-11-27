@@ -1,6 +1,6 @@
 # Suivi de l'avancement
 
-_Généré le 2026-11-25 par `openfootball progress` — ne pas éditer à la main._
+_Généré le 2026-11-27 par `openfootball progress` — ne pas éditer à la main._
 
 ## Effectifs par saison et par championnat
 
@@ -8,7 +8,7 @@ Chaque case : effectifs établis / clubs du championnat. `⚠` = au moins un tro
 
 | Saison | État | AFC-CL | AGO-L1 | ALB-L1 | AND-L1 | ARE-L1 | ARG-CA | ARG-PD | ARM-L1 | AUS-L1 | AUT-L1 | AZE-L1 | BEL-L1 | BEL-PL | BGR-L1 | BIH-L1 | BLR-L1 | BOL-L1 | BRA-CB | BRA-SA | BWA-L1 | CAF-CL | CHE-L1 | CHL-L1 | CHN-L1 | CIV-L1 | CMR-L1 | COD-L1 | COG-L1 | COL-L1 | CONMEBOL-CL | CYP-L1 | CZE-L1 | DEU-B2 | DEU-BL | DEU-DFB | DEU-L1 | DEU-SC | DNK-L1 | DZA-L1 | ECU-L1 | EGY-L1 | ENG-CH | ENG-CS | ENG-EFL | ENG-FAC | ENG-PL | ESP-CDR | ESP-LL | ESP-SD | EST-L1 | ETH-L1 | FIFA-CWC | FIFA-IC | FIN-L1 | FRA-CDF | FRA-CDL | FRA-L1 | FRA-L2 | FRA-TDC | GEO-L1 | GHA-L1 | GIB-L1 | GIN-L1 | GRC-L1 | HKG-L1 | HRV-L1 | HUN-L1 | IDN-L1 | IND-L1 | IRL-L1 | IRN-L1 | IRQ-L1 | ISL-L1 | ISR-L1 | ITA-CI | ITA-L1 | ITA-SA | ITA-SB | JOR-L1 | JPN-L1 | KAZ-L1 | KOR-L1 | LBY-L1 | LTU-L1 | LUX-L1 | LVA-L1 | MAR-L1 | MDA-L1 | MEX-L1 | MKD-L1 | MLI-L1 | MLT-L1 | MOZ-L1 | MRT-L1 | MYS-L1 | NGA-L1 | NIR-L1 | NLD-ED | NLD-JCS | NLD-KNVB | NLD-L1 | NOR-L1 | PER-L1 | PHL-L1 | POL-L1 | PRT-L1 | PRT-PL | PRT-TL | PRT-TP | PRY-L1 | QAT-L1 | ROU-L1 | RUS-L1 | SAU-PL | SCO-L1 | SCO-LC | SCO-SC | SDN-L1 | SEN-L1 | SGP-L1 | SRB-L1 | SVK-L1 | SVN-L1 | SWE-L1 | SWZ-L1 | TGO-L1 | THA-L1 | TJK-L1 | TKM-L1 | TUN-L1 | TUR-L1 | TUR-SL | TUR-TC | TZA-L1 | UEFA-CL | UEFA-CWC | UEFA-ECL | UEFA-EL | UEFA-SC | UEFA-UC | UGA-L1 | UKR-L1 | URY-L1 | USA-MLS | UZB-L1 | VEN-L1 | VNM-L1 | WAL-L1 | XKS-L1 | ZAF-L1 | ZMB-L1 | ZWE-L1 |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 2026/27 | open | — | 1/2 ⚠ | 10/10 ✓ | 1/1 ✓ | 3/14 ⚠ | — | 30/30 ✓ | 12/12 ✓ | 1/12 ⚠ | 12/12 ✓ | 12/12 ✓ | — | 18/18 ✓ | 14/14 ✓ | 10/10 ✓ | 16/16 ✓ | 2/16 ⚠ | — | 20/20 ✓ | — | — | 12/12 ✓ | 2/16 ⚠ | 2/16 ⚠ | — | 0/1 ⚠ | — | — | 4/20 ⚠ | — | 14/14 ✓ | 16/16 ✓ | 18/18 ✓ | 18/18 ✓ | — | — | — | 12/12 ✓ | 1/16 ⚠ | 3/16 ⚠ | 2/20 ⚠ | 24/24 ✓ | — | — | — | 20/20 ✓ | — | 20/20 ✓ | 22/22 ✓ | 10/10 ✓ | — | — | — | 12/12 ✓ | — | — | 18/18 ✓ | 18/18 ✓ | — | 9/10 ⚠ | — | 11/11 ✓ | 1/1 ✓ | 14/14 ✓ | — | 10/10 ✓ | 12/12 ✓ | — | — | 10/10 ✓ | 2/2 ✓ | 1/1 ✓ | — | 14/14 ✓ | — | — | 20/20 ✓ | 20/20 ✓ | — | 5/20 ⚠ | 16/16 ✓ | 3/12 ⚠ | — | 10/10 ✓ | 16/16 ✓ | 9/10 ⚠ | 2/16 ⚠ | 7/8 ⚠ | 0/18 ⚠ | 10/10 ✓ | — | 12/12 ✓ | — | 0/1 ⚠ | 1/1 ✓ | — | 12/12 ✓ | 18/18 ✓ | — | — | — | 16/16 ✓ | 3/18 ⚠ | — | 18/18 ✓ | 1/1 ✓ | 18/18 ✓ | — | — | 2/12 ⚠ | 3/13 ⚠ | 16/16 ✓ | 16/16 ✓ | 18/18 ✓ | 12/12 ✓ | — | — | 1/1 ✓ | — | — | 14/14 ✓ | 12/12 ✓ | 9/10 ⚠ | 16/16 ✓ | — | — | 3/3 ✓ | — | — | 2/16 ⚠ | — | 18/18 ✓ | — | 2/2 ✓ | — | — | — | — | — | — | — | 17/17 ✓ | 2/16 ⚠ | 30/30 ✓ | 2/2 ✓ | 2/2 ✓ | 1/14 ⚠ | 16/16 ✓ | 10/10 ✓ | 1/16 ⚠ | — | — |
+| 2026/27 | open | — | 1/2 ⚠ | 10/10 ✓ | 1/1 ✓ | 14/14 ✓ | — | 30/30 ✓ | 12/12 ✓ | 12/12 ✓ | 12/12 ✓ | 12/12 ✓ | — | 18/18 ✓ | 14/14 ✓ | 10/10 ✓ | 16/16 ✓ | 15/16 ⚠ | — | 20/20 ✓ | — | — | 12/12 ✓ | 16/16 ✓ | 16/16 ✓ | — | 0/1 ⚠ | — | — | 20/20 ✓ | — | 14/14 ✓ | 16/16 ✓ | 18/18 ✓ | 18/18 ✓ | — | — | — | 12/12 ✓ | 16/16 ✓ | 14/16 ⚠ | 17/20 ⚠ | 24/24 ✓ | — | — | — | 20/20 ✓ | — | 20/20 ✓ | 22/22 ✓ | 10/10 ✓ | — | — | — | 12/12 ✓ | — | — | 18/18 ✓ | 18/18 ✓ | — | 9/10 ⚠ | — | 11/11 ✓ | 1/1 ✓ | 14/14 ✓ | — | 10/10 ✓ | 12/12 ✓ | — | — | 10/10 ✓ | 2/2 ✓ | 1/1 ✓ | — | 14/14 ✓ | — | — | 20/20 ✓ | 20/20 ✓ | — | 20/20 ✓ | 16/16 ✓ | 12/12 ✓ | — | 10/10 ✓ | 16/16 ✓ | 9/10 ⚠ | 13/16 ⚠ | 7/8 ⚠ | 18/18 ✓ | 10/10 ✓ | — | 12/12 ✓ | — | 0/1 ⚠ | 1/1 ✓ | — | 12/12 ✓ | 18/18 ✓ | — | — | — | 16/16 ✓ | 15/18 ⚠ | — | 18/18 ✓ | 1/1 ✓ | 18/18 ✓ | — | — | 10/12 ⚠ | 10/13 ⚠ | 16/16 ✓ | 16/16 ✓ | 18/18 ✓ | 12/12 ✓ | — | — | 1/1 ✓ | — | — | 14/14 ✓ | 12/12 ✓ | 9/10 ⚠ | 16/16 ✓ | — | — | 3/3 ✓ | — | — | 14/16 ⚠ | — | 18/18 ✓ | — | 2/2 ✓ | — | — | — | — | — | — | — | 17/17 ✓ | 16/16 ✓ | 30/30 ✓ | 2/2 ✓ | 2/2 ✓ | 14/14 ✓ | 16/16 ✓ | 10/10 ✓ | 10/16 ⚠ | — | — |
 | 2025/26 | backfill | — | 0/1 ⚠ | 0/10 ⚠ | 0/10 ⚠ | 1/14 ⚠ | — | 20/30 ⚠ | 4/10 ⚠ | 1/12 ⚠ | 5/12 ⚠ | 4/12 ⚠ | — | 12/16 ⚠ | 3/16 ⚠ | 1/10 ⚠ | 0/16 ⚠ | 1/16 ⚠ | — | 18/20 ⚠ | — | — | 6/12 ⚠ | 2/16 ⚠ | 3/16 ⚠ | — | — | 0/1 ⚠ | — | 2/20 ⚠ | — | 3/14 ⚠ | 5/16 ⚠ | 7/18 ⚠ | 18/18 ✓ | — | — | — | 5/12 ⚠ | 2/16 ⚠ | 2/16 ⚠ | 2/21 ⚠ | 24/24 ✓ | — | — | — | 20/20 ✓ | — | 20/20 ✓ | 5/22 ⚠ | 1/10 ⚠ | — | — | — | 1/12 ⚠ | — | — | 18/18 ✓ | 8/18 ⚠ | — | 0/10 ⚠ | — | 1/12 ⚠ | — | 5/14 ⚠ | — | 3/10 ⚠ | 2/12 ⚠ | — | — | 2/10 ⚠ | 1/1 ✓ | 1/1 ✓ | 1/12 ⚠ | 4/14 ⚠ | — | — | 20/20 ✓ | 20/20 ✓ | — | 3/20 ⚠ | 2/14 ⚠ | 3/12 ⚠ | — | 0/10 ⚠ | 0/16 ⚠ | 0/10 ⚠ | 0/16 ⚠ | 1/8 ⚠ | 0/18 ⚠ | 0/12 ⚠ | 0/1 ⚠ | 1/1 ✓ | — | — | 1/1 ✓ | 0/1 ⚠ | 0/12 ⚠ | 11/18 ⚠ | — | — | — | 6/16 ⚠ | 3/19 ⚠ | — | 4/18 ⚠ | — | 6/18 ⚠ | — | — | 1/12 ⚠ | 1/12 ⚠ | 4/16 ⚠ | 0/16 ⚠ | 18/18 ✓ | 4/12 ⚠ | — | — | 0/1 ⚠ | — | — | 2/16 ⚠ | 2/12 ⚠ | 1/10 ⚠ | 5/16 ⚠ | — | — | 1/1 ✓ | — | — | 1/16 ⚠ | — | 4/18 ⚠ | — | 2/2 ✓ | — | — | — | — | — | — | — | 3/16 ⚠ | 2/16 ⚠ | 29/30 ⚠ | 0/1 ⚠ | 0/2 ⚠ | 0/14 ⚠ | 0/12 ⚠ | 1/10 ⚠ | 1/16 ⚠ | 0/1 ⚠ | — |
 | 2024/25 | backfill | — | 0/1 ⚠ | 0/10 ⚠ | 0/10 ⚠ | 1/14 ⚠ | — | 8/28 ⚠ | 4/11 ⚠ | 1/13 ⚠ | 6/12 ⚠ | 3/10 ⚠ | — | 13/16 ⚠ | 3/16 ⚠ | 1/12 ⚠ | 0/16 ⚠ | 0/16 ⚠ | — | 13/20 ⚠ | — | — | 4/12 ⚠ | 4/16 ⚠ | 3/16 ⚠ | 0/1 ⚠ | — | 0/2 ⚠ | — | 2/20 ⚠ | — | 3/14 ⚠ | 5/16 ⚠ | 5/18 ⚠ | 18/18 ✓ | — | — | — | 3/12 ⚠ | 2/16 ⚠ | 3/16 ⚠ | 2/18 ⚠ | 24/24 ✓ | — | — | — | 20/20 ✓ | — | 20/20 ✓ | 15/22 ⚠ | 1/10 ⚠ | — | — | — | 2/12 ⚠ | — | — | 18/18 ✓ | 8/18 ⚠ | — | 0/10 ⚠ | — | 0/11 ⚠ | — | 5/14 ⚠ | — | 3/10 ⚠ | 3/12 ⚠ | — | — | 3/10 ⚠ | 2/2 ✓ | 1/1 ✓ | 1/12 ⚠ | 2/14 ⚠ | — | — | 20/20 ✓ | 20/20 ✓ | — | 3/20 ⚠ | 3/13 ⚠ | 2/12 ⚠ | — | 0/10 ⚠ | 0/16 ⚠ | 1/10 ⚠ | 1/16 ⚠ | 1/8 ⚠ | 0/18 ⚠ | 0/12 ⚠ | 0/1 ⚠ | — | — | — | 1/1 ✓ | — | 0/12 ⚠ | 14/18 ⚠ | — | — | — | 8/16 ⚠ | 2/18 ⚠ | — | 3/18 ⚠ | — | 8/18 ⚠ | — | — | 2/12 ⚠ | 3/12 ⚠ | 2/16 ⚠ | 7/16 ⚠ | 18/18 ✓ | 4/12 ⚠ | — | — | 0/1 ⚠ | — | — | 3/16 ⚠ | 2/12 ⚠ | 2/10 ⚠ | 5/16 ⚠ | — | — | 1/1 ✓ | — | — | 1/16 ⚠ | — | 17/19 ⚠ | — | 0/1 ⚠ | — | — | — | — | — | — | — | 4/16 ⚠ | 2/16 ⚠ | 26/29 ⚠ | 1/1 ✓ | 0/2 ⚠ | 0/14 ⚠ | 0/12 ⚠ | 0/10 ⚠ | 2/16 ⚠ | — | — |
 | 2023/24 | backfill | — | 0/1 ⚠ | 0/10 ⚠ | 0/10 ⚠ | 1/14 ⚠ | — | 6/29 ⚠ | 4/10 ⚠ | 1/12 ⚠ | 6/12 ⚠ | 4/10 ⚠ | — | 16/16 ✓ | 3/16 ⚠ | 1/12 ⚠ | 1/15 ⚠ | 1/17 ⚠ | — | 15/20 ⚠ | 0/1 ⚠ | — | 7/12 ⚠ | 2/16 ⚠ | 3/16 ⚠ | 0/1 ⚠ | — | 0/1 ⚠ | — | 2/20 ⚠ | — | 4/14 ⚠ | 5/16 ⚠ | 18/18 ✓ | 18/18 ✓ | — | — | — | 6/13 ⚠ | 1/16 ⚠ | 3/16 ⚠ | 2/18 ⚠ | 24/24 ✓ | — | — | — | 20/20 ✓ | — | 20/20 ✓ | 22/22 ✓ | 1/10 ⚠ | — | — | — | 1/12 ⚠ | — | — | 18/18 ✓ | 20/20 ✓ | — | 0/10 ⚠ | 0/1 ⚠ | 0/11 ⚠ | — | 5/14 ⚠ | 1/1 ✓ | 3/10 ⚠ | 2/12 ⚠ | — | 1/1 ✓ | 2/10 ⚠ | 3/3 ✓ | 1/1 ✓ | 1/6 ⚠ | 3/14 ⚠ | — | — | 20/20 ✓ | 20/20 ✓ | 0/1 ⚠ | 4/19 ⚠ | 2/14 ⚠ | 4/12 ⚠ | — | 0/10 ⚠ | 0/16 ⚠ | 0/10 ⚠ | 1/16 ⚠ | 1/8 ⚠ | 0/18 ⚠ | 0/12 ⚠ | — | — | — | 0/1 ⚠ | 1/1 ✓ | — | 0/12 ⚠ | 18/18 ✓ | — | — | — | 8/16 ⚠ | 3/19 ⚠ | 0/1 ⚠ | 3/18 ⚠ | — | 17/18 ⚠ | — | — | 2/12 ⚠ | 1/12 ⚠ | 3/16 ⚠ | 8/16 ⚠ | 18/18 ✓ | 4/12 ⚠ | — | — | 0/1 ⚠ | — | 1/1 ✓ | 4/16 ⚠ | 2/12 ⚠ | 1/10 ⚠ | 4/16 ⚠ | — | — | 3/3 ✓ | 1/1 ✓ | 0/1 ⚠ | 1/14 ⚠ | — | 20/20 ✓ | — | 0/2 ⚠ | — | — | — | — | — | — | — | 4/16 ⚠ | 1/16 ⚠ | 29/29 ✓ | 1/4 ⚠ | 0/2 ⚠ | 1/14 ⚠ | 0/12 ⚠ | 1/10 ⚠ | 1/16 ⚠ | — | — |
@@ -36,292 +36,44 @@ Chaque case : effectifs établis / clubs du championnat. `⚠` = au moins un tro
 | 2001/02 | backfill | — | — | 0/14 ⚠ | 0/8 ⚠ | — | — | — | 0/13 ⚠ | — | 1/10 ⚠ | 0/12 ⚠ | 1/1 ✓ | 4/17 ⚠ | 0/6 ⚠ | 0/16 ⚠ | 0/14 ⚠ | — | — | — | — | — | 2/2 ✓ | — | — | — | — | — | — | — | — | 0/14 ⚠ | 1/16 ⚠ | 18/18 ✓ | 18/18 ✓ | — | — | — | 1/12 ⚠ | — | — | — | 24/24 ✓ | — | — | — | 20/20 ✓ | — | 20/20 ✓ | 3/22 ⚠ | 0/7 ⚠ | — | — | — | 0/12 ⚠ | — | — | 18/18 ✓ | 20/20 ✓ | — | 0/12 ⚠ | — | — | — | 4/14 ⚠ | — | 2/16 ⚠ | 2/12 ⚠ | — | — | 1/12 ⚠ | — | — | 0/10 ⚠ | 1/12 ⚠ | — | 7/7 ✓ | — | 19/20 ⚠ | — | — | 0/17 ⚠ | — | — | 0/10 ⚠ | 0/12 ⚠ | 0/8 ⚠ | — | 0/8 ⚠ | — | 0/12 ⚠ | — | 0/10 ⚠ | — | — | — | — | 0/20 ⚠ | 8/16 ⚠ | — | — | 2/2 ✓ | 2/14 ⚠ | — | — | 0/16 ⚠ | 2/2 ✓ | 3/16 ⚠ | — | — | — | — | 1/16 ⚠ | 4/16 ⚠ | — | 3/12 ⚠ | — | — | — | — | — | 0/18 ⚠ | 0/10 ⚠ | 0/12 ⚠ | 1/14 ⚠ | — | — | — | — | — | — | 2/2 ✓ | 4/16 ⚠ | — | — | — | — | — | — | — | — | — | 1/14 ⚠ | — | — | — | — | — | 0/18 ⚠ | — | — | — | — |
 | 2000/01 | backfill | — | — | 0/14 ⚠ | — | — | — | — | 0/10 ⚠ | — | 2/10 ⚠ | 0/11 ⚠ | 1/1 ✓ | 5/17 ⚠ | 0/14 ⚠ | 0/22 ⚠ | 0/16 ⚠ | — | — | — | — | — | 1/9 ⚠ | — | — | — | — | — | — | — | — | 0/14 ⚠ | 1/16 ⚠ | 18/18 ✓ | 18/18 ✓ | — | — | — | 1/12 ⚠ | — | — | — | 24/24 ✓ | — | — | — | 20/20 ✓ | — | 19/20 ⚠ | 7/22 ⚠ | 0/7 ⚠ | — | — | — | 0/12 ⚠ | — | — | 18/18 ✓ | 7/20 ⚠ | — | 0/12 ⚠ | — | — | — | 4/16 ⚠ | — | 1/12 ⚠ | 1/16 ⚠ | — | — | 0/12 ⚠ | — | — | 0/10 ⚠ | 0/12 ⚠ | — | 6/6 ✓ | — | 18/20 ⚠ | — | — | 0/14 ⚠ | — | — | 0/10 ⚠ | 0/12 ⚠ | 0/8 ⚠ | — | 0/8 ⚠ | — | 0/14 ⚠ | — | 0/10 ⚠ | — | — | — | — | 0/20 ⚠ | 8/16 ⚠ | — | — | 2/2 ✓ | 2/14 ⚠ | — | — | 0/16 ⚠ | 1/1 ✓ | 3/17 ⚠ | — | — | — | — | 1/16 ⚠ | 3/16 ⚠ | — | 4/12 ⚠ | — | — | — | — | — | 0/18 ⚠ | 0/10 ⚠ | 0/12 ⚠ | 1/14 ⚠ | — | — | — | — | — | — | 2/2 ✓ | — | — | — | — | — | — | — | — | — | — | 2/14 ⚠ | — | — | — | — | — | 0/18 ⚠ | — | — | — | — |
 
-**Total : 10303 / 26674 effectifs (38.6 %).**
+**Total : 10551 / 26674 effectifs (39.6 %).**
 
 ## Manques : club-saisons sans effectif
 
 | Saison | Championnat | Club | Statut du trou |
 |---|---|---|---|
 | 2026/27 | AGO-L1 | Atlético Petróleos de Luanda | **non validé** |
-| 2026/27 | ARE-L1 | Ajman Club | **non validé** |
-| 2026/27 | ARE-L1 | Al Dhafra FC | **non validé** |
-| 2026/27 | ARE-L1 | Al Jazira Club | **non validé** |
-| 2026/27 | ARE-L1 | Al Wahda FC | **non validé** |
-| 2026/27 | ARE-L1 | Al-Nasr SC (Dubai) | **non validé** |
-| 2026/27 | ARE-L1 | Baniyas Club | **non validé** |
-| 2026/27 | ARE-L1 | Hatta Club | **non validé** |
-| 2026/27 | ARE-L1 | Kalba FC | **non validé** |
-| 2026/27 | ARE-L1 | Khor Fakkan Club | **non validé** |
-| 2026/27 | ARE-L1 | Sharjah FC | **non validé** |
-| 2026/27 | ARE-L1 | United FC (Dubai) | **non validé** |
-| 2026/27 | AUS-L1 | Adelaide United FC | **non validé** |
-| 2026/27 | AUS-L1 | Auckland FC | **non validé** |
-| 2026/27 | AUS-L1 | Brisbane Roar FC | **non validé** |
-| 2026/27 | AUS-L1 | Central Coast Mariners FC | **non validé** |
-| 2026/27 | AUS-L1 | Macarthur FC | **non validé** |
-| 2026/27 | AUS-L1 | Melbourne City FC | **non validé** |
-| 2026/27 | AUS-L1 | Melbourne Victory FC | **non validé** |
-| 2026/27 | AUS-L1 | Perth Glory FC | **non validé** |
-| 2026/27 | AUS-L1 | Sydney FC | **non validé** |
-| 2026/27 | AUS-L1 | Wellington Phoenix FC | **non validé** |
-| 2026/27 | AUS-L1 | Western Sydney Wanderers FC | **non validé** |
-| 2026/27 | BOL-L1 | Academia del Balompié Boliviano | **non validé** |
-| 2026/27 | BOL-L1 | C.A. Nacional Potosí | **non validé** |
-| 2026/27 | BOL-L1 | C.D. Real Tomayapo | **non validé** |
-| 2026/27 | BOL-L1 | C.D. San Antonio Bulo Bulo | **non validé** |
 | 2026/27 | BOL-L1 | CDT Real Oruro | **non validé** |
-| 2026/27 | BOL-L1 | Club Aurora | **non validé** |
-| 2026/27 | BOL-L1 | Club Blooming | **non validé** |
-| 2026/27 | BOL-L1 | Club Deportivo Guabirá | **non validé** |
-| 2026/27 | BOL-L1 | Club Independiente Petrolero | **non validé** |
-| 2026/27 | BOL-L1 | Club Real Potosí | **non validé** |
-| 2026/27 | BOL-L1 | F.C. Universitario de Vinto | **non validé** |
-| 2026/27 | BOL-L1 | GV San José | **non validé** |
-| 2026/27 | BOL-L1 | Oriente Petrolero | **non validé** |
-| 2026/27 | BOL-L1 | The Strongest | **non validé** |
-| 2026/27 | CHL-L1 | Audax Italiano | **non validé** |
-| 2026/27 | CHL-L1 | C.D. Universidad de Concepción | **non validé** |
-| 2026/27 | CHL-L1 | Club Deportivo Palestino | **non validé** |
-| 2026/27 | CHL-L1 | Club Universidad de Chile | **non validé** |
-| 2026/27 | CHL-L1 | Cobresal | **non validé** |
-| 2026/27 | CHL-L1 | Colo-Colo | **non validé** |
-| 2026/27 | CHL-L1 | Deportes Concepción (Chile) | **non validé** |
-| 2026/27 | CHL-L1 | Deportes La Serena | **non validé** |
-| 2026/27 | CHL-L1 | Deportes Limache | **non validé** |
-| 2026/27 | CHL-L1 | Everton de Viña del Mar | **non validé** |
-| 2026/27 | CHL-L1 | Huachipato FC | **non validé** |
-| 2026/27 | CHL-L1 | O'Higgins F.C. | **non validé** |
-| 2026/27 | CHL-L1 | Unión La Calera | **non validé** |
-| 2026/27 | CHL-L1 | Ñublense | **non validé** |
-| 2026/27 | CHN-L1 | Chengdu Rongcheng F.C. | **non validé** |
-| 2026/27 | CHN-L1 | Chongqing Tonglianglong F.C. | **non validé** |
-| 2026/27 | CHN-L1 | Dalian Yingbo F.C. | **non validé** |
-| 2026/27 | CHN-L1 | Henan F.C. | **non validé** |
-| 2026/27 | CHN-L1 | Liaoning Tieren F.C. | **non validé** |
-| 2026/27 | CHN-L1 | Qingdao Hainiu F.C. | **non validé** |
-| 2026/27 | CHN-L1 | Qingdao West Coast F.C. | **non validé** |
-| 2026/27 | CHN-L1 | Shandong Taishan F.C. | **non validé** |
-| 2026/27 | CHN-L1 | Shanghai Shenhua F.C. | **non validé** |
-| 2026/27 | CHN-L1 | Shenzhen Peng City F.C. | **non validé** |
-| 2026/27 | CHN-L1 | Tianjin Jinmen Tiger F.C. | **non validé** |
-| 2026/27 | CHN-L1 | Wuhan Three Towns F.C. | **non validé** |
-| 2026/27 | CHN-L1 | Yunnan Yukun F.C. | **non validé** |
-| 2026/27 | CHN-L1 | Zhejiang Professional F.C. | **non validé** |
 | 2026/27 | CMR-L1 | Colombe Sportive | **non validé** |
-| 2026/27 | COL-L1 | Alianza Valledupar F.C. | **non validé** |
-| 2026/27 | COL-L1 | América de Cali | **non validé** |
-| 2026/27 | COL-L1 | Atlético Bucaramanga | **non validé** |
-| 2026/27 | COL-L1 | Atlético Nacional | **non validé** |
-| 2026/27 | COL-L1 | Boyacá Chicó F.C. | **non validé** |
-| 2026/27 | COL-L1 | Cúcuta Deportivo | **non validé** |
-| 2026/27 | COL-L1 | Deportivo Cali | **non validé** |
-| 2026/27 | COL-L1 | Deportivo Pasto | **non validé** |
-| 2026/27 | COL-L1 | Deportivo Pereira | **non validé** |
-| 2026/27 | COL-L1 | Fortaleza F.C. | **non validé** |
-| 2026/27 | COL-L1 | Internacional de Bogotá | **non validé** |
-| 2026/27 | COL-L1 | Jaguares de Córdoba | **non validé** |
-| 2026/27 | COL-L1 | Llaneros F.C. | **non validé** |
-| 2026/27 | COL-L1 | Millonarios F.C. | **non validé** |
-| 2026/27 | COL-L1 | Once Caldas | **non validé** |
-| 2026/27 | COL-L1 | Águilas Doradas | **non validé** |
-| 2026/27 | DZA-L1 | ASO Chlef | **non validé** |
-| 2026/27 | DZA-L1 | CR Belouizdad | **non validé** |
-| 2026/27 | DZA-L1 | CR Témouchent | **non validé** |
-| 2026/27 | DZA-L1 | CS Constantine | **non validé** |
-| 2026/27 | DZA-L1 | ES Ben Aknoun | **non validé** |
-| 2026/27 | DZA-L1 | ES Sétif | **non validé** |
-| 2026/27 | DZA-L1 | JS El Biar | **non validé** |
-| 2026/27 | DZA-L1 | JS Kabylie | **non validé** |
-| 2026/27 | DZA-L1 | JS Saoura | **non validé** |
-| 2026/27 | DZA-L1 | MB Rouissat | **non validé** |
-| 2026/27 | DZA-L1 | MC Oran | **non validé** |
-| 2026/27 | DZA-L1 | Olympique Akbou | **non validé** |
-| 2026/27 | DZA-L1 | US Biskra | **non validé** |
-| 2026/27 | DZA-L1 | USM Alger | **non validé** |
-| 2026/27 | DZA-L1 | USM Khenchela | **non validé** |
-| 2026/27 | ECU-L1 | C.D. Técnico Universitario | **non validé** |
-| 2026/27 | ECU-L1 | C.D. Universidad Católica (Ecuador) | **non validé** |
-| 2026/27 | ECU-L1 | Club Deportivo Macará | **non validé** |
-| 2026/27 | ECU-L1 | Club Sport Emelec | **non validé** |
 | 2026/27 | ECU-L1 | Delfín S.C. | **non validé** |
-| 2026/27 | ECU-L1 | Deportivo Cuenca | **non validé** |
-| 2026/27 | ECU-L1 | Guayaquil City F.C. | **non validé** |
-| 2026/27 | ECU-L1 | Leones F.C. (Ecuador) | **non validé** |
-| 2026/27 | ECU-L1 | Libertad F.C. (Ecuador) | **non validé** |
 | 2026/27 | ECU-L1 | Manta F.C. | **non validé** |
-| 2026/27 | ECU-L1 | Mushuc Runa | **non validé** |
-| 2026/27 | ECU-L1 | Orense S.C. | **non validé** |
-| 2026/27 | ECU-L1 | S.D. Aucas | **non validé** |
-| 2026/27 | EGY-L1 | Abou Qir Fertilizers SC | **non validé** |
-| 2026/27 | EGY-L1 | Al Ahly SC | **non validé** |
-| 2026/27 | EGY-L1 | Al Ittihad Alexandria Club | **non validé** |
-| 2026/27 | EGY-L1 | Al Masry SC | **non validé** |
-| 2026/27 | EGY-L1 | Al Mokawloon Al Arab SC | **non validé** |
-| 2026/27 | EGY-L1 | Asyut Petroleum SC | **non validé** |
-| 2026/27 | EGY-L1 | Ceramica Cleopatra FC | **non validé** |
-| 2026/27 | EGY-L1 | El Gouna FC | **non validé** |
-| 2026/27 | EGY-L1 | El Qanah FC | **non validé** |
 | 2026/27 | EGY-L1 | El Sharkia Enppi SC | **non validé** |
-| 2026/27 | EGY-L1 | Ghazl El Mahalla SC | **non validé** |
-| 2026/27 | EGY-L1 | Modern Sport FC | **non validé** |
 | 2026/27 | EGY-L1 | Montakhab El Suez Petrojet SC | **non validé** |
-| 2026/27 | EGY-L1 | National Bank of Egypt SC | **non validé** |
 | 2026/27 | EGY-L1 | Smouha SC | **non validé** |
-| 2026/27 | EGY-L1 | Tala'ea El Gaish SC | **non validé** |
-| 2026/27 | EGY-L1 | Wadi Degla SC | **non validé** |
-| 2026/27 | EGY-L1 | ZED FC | **non validé** |
 | 2026/27 | GEO-L1 | FC Rustavi | **non validé** |
-| 2026/27 | JPN-L1 | Avispa Fukuoka | **non validé** |
-| 2026/27 | JPN-L1 | Cerezo Osaka | **non validé** |
-| 2026/27 | JPN-L1 | FC Machida Zelvia | **non validé** |
-| 2026/27 | JPN-L1 | FC Tokyo | **non validé** |
-| 2026/27 | JPN-L1 | Fagiano Okayama | **non validé** |
-| 2026/27 | JPN-L1 | JEF United Chiba | **non validé** |
-| 2026/27 | JPN-L1 | Kawasaki Frontale | **non validé** |
-| 2026/27 | JPN-L1 | Mito HollyHock | **non validé** |
-| 2026/27 | JPN-L1 | Nagoya Grampus | **non validé** |
-| 2026/27 | JPN-L1 | Sanfrecce Hiroshima | **non validé** |
-| 2026/27 | JPN-L1 | Shimizu S-Pulse | **non validé** |
-| 2026/27 | JPN-L1 | Tokyo Verdy | **non validé** |
-| 2026/27 | JPN-L1 | Urawa Red Diamonds | **non validé** |
-| 2026/27 | JPN-L1 | V-Varen Nagasaki | **non validé** |
-| 2026/27 | JPN-L1 | Yokohama F. Marinos | **non validé** |
-| 2026/27 | KOR-L1 | Bucheon FC 1995 | **non validé** |
-| 2026/27 | KOR-L1 | FC Anyang | **non validé** |
-| 2026/27 | KOR-L1 | FC Seoul | **non validé** |
-| 2026/27 | KOR-L1 | Gangwon FC | **non validé** |
-| 2026/27 | KOR-L1 | Gimcheon Sangmu FC | **non validé** |
-| 2026/27 | KOR-L1 | Gwangju FC | **non validé** |
-| 2026/27 | KOR-L1 | Incheon United FC | **non validé** |
-| 2026/27 | KOR-L1 | Jeju SK FC | **non validé** |
-| 2026/27 | KOR-L1 | Ulsan HD FC | **non validé** |
 | 2026/27 | LVA-L1 | FK Tukums 2000 | **non validé** |
-| 2026/27 | MAR-L1 | AS FAR | **non validé** |
-| 2026/27 | MAR-L1 | COD Meknès | **non validé** |
-| 2026/27 | MAR-L1 | Difaâ Hassani El Jadidi | **non validé** |
-| 2026/27 | MAR-L1 | Fath Union Sport | **non validé** |
-| 2026/27 | MAR-L1 | Hassania Agadir | **non validé** |
-| 2026/27 | MAR-L1 | IR Tanger | **non validé** |
-| 2026/27 | MAR-L1 | KAC Marrakech | **non validé** |
-| 2026/27 | MAR-L1 | MA Tétouan | **non validé** |
 | 2026/27 | MAR-L1 | RCA Zemamra | **non validé** |
-| 2026/27 | MAR-L1 | Raja CA | **non validé** |
 | 2026/27 | MAR-L1 | US Amal Tiznit | **non validé** |
-| 2026/27 | MAR-L1 | UTS Rabat | **non validé** |
 | 2026/27 | MAR-L1 | WS Témara | **non validé** |
-| 2026/27 | MAR-L1 | Wydad AC | **non validé** |
 | 2026/27 | MDA-L1 | FC Real Sireți | **non validé** |
-| 2026/27 | MEX-L1 | Atlante F.C. | **non validé** |
-| 2026/27 | MEX-L1 | Atlas F.C. | **non validé** |
-| 2026/27 | MEX-L1 | Atlético San Luis | **non validé** |
-| 2026/27 | MEX-L1 | C.D. Guadalajara | **non validé** |
-| 2026/27 | MEX-L1 | C.F. Monterrey | **non validé** |
-| 2026/27 | MEX-L1 | C.F. Pachuca | **non validé** |
-| 2026/27 | MEX-L1 | Club América | **non validé** |
-| 2026/27 | MEX-L1 | Club León | **non validé** |
-| 2026/27 | MEX-L1 | Club Necaxa | **non validé** |
-| 2026/27 | MEX-L1 | Club Puebla | **non validé** |
-| 2026/27 | MEX-L1 | Club Tijuana | **non validé** |
-| 2026/27 | MEX-L1 | Cruz Azul | **non validé** |
-| 2026/27 | MEX-L1 | FC Juárez | **non validé** |
-| 2026/27 | MEX-L1 | Pumas UNAM | **non validé** |
-| 2026/27 | MEX-L1 | Querétaro F.C. | **non validé** |
-| 2026/27 | MEX-L1 | Santos Laguna | **non validé** |
-| 2026/27 | MEX-L1 | Tigres UANL | **non validé** |
-| 2026/27 | MEX-L1 | Toluca FC | **non validé** |
 | 2026/27 | MRT-L1 | FC Nouadhibou | **non validé** |
 | 2026/27 | PER-L1 | ADC Juan Pablo II College | **non validé** |
-| 2026/27 | PER-L1 | Alianza Atlético | **non validé** |
-| 2026/27 | PER-L1 | Alianza Lima | **non validé** |
-| 2026/27 | PER-L1 | Asociación Deportiva Tarma | **non validé** |
-| 2026/27 | PER-L1 | Atlético Grau | **non validé** |
-| 2026/27 | PER-L1 | Cienciano | **non validé** |
-| 2026/27 | PER-L1 | Club Deportivo Los Chankas | **non validé** |
-| 2026/27 | PER-L1 | Club Deportivo Moquegua | **non validé** |
-| 2026/27 | PER-L1 | Comerciantes Unidos | **non validé** |
-| 2026/27 | PER-L1 | Deportivo Garcilaso | **non validé** |
-| 2026/27 | PER-L1 | FBC Melgar | **non validé** |
 | 2026/27 | PER-L1 | FC Cajamarca | **non validé** |
-| 2026/27 | PER-L1 | Sport Boys | **non validé** |
-| 2026/27 | PER-L1 | Sport Huancayo | **non validé** |
 | 2026/27 | PER-L1 | Universidad Técnica de Cajamarca | **non validé** |
-| 2026/27 | PRY-L1 | Club 2 de Mayo | **non validé** |
-| 2026/27 | PRY-L1 | Club Guaraní | **non validé** |
-| 2026/27 | PRY-L1 | Club Nacional | **non validé** |
 | 2026/27 | PRY-L1 | Club Olimpia | **non validé** |
-| 2026/27 | PRY-L1 | Club Rubio Ñu | **non validé** |
-| 2026/27 | PRY-L1 | Club Sportivo San Lorenzo | **non validé** |
 | 2026/27 | PRY-L1 | Recoleta FC | **non validé** |
-| 2026/27 | PRY-L1 | Sportivo Ameliano | **non validé** |
-| 2026/27 | PRY-L1 | Sportivo Luqueño | **non validé** |
-| 2026/27 | PRY-L1 | Sportivo Trinidense | **non validé** |
-| 2026/27 | QAT-L1 | Al Duhail SC | **non validé** |
-| 2026/27 | QAT-L1 | Al Kharaitiyat SC | **non validé** |
-| 2026/27 | QAT-L1 | Al-Arabi SC (Qatar) | **non validé** |
 | 2026/27 | QAT-L1 | Al-Khor SC | **non validé** |
-| 2026/27 | QAT-L1 | Al-Rayyan SC | **non validé** |
-| 2026/27 | QAT-L1 | Al-Sailiya SC | **non validé** |
 | 2026/27 | QAT-L1 | Al-Wakrah SC | **non validé** |
 | 2026/27 | QAT-L1 | El Jaish SC | **non validé** |
-| 2026/27 | QAT-L1 | Qatar SC | **non validé** |
-| 2026/27 | QAT-L1 | Umm Salal SC | **non validé** |
 | 2026/27 | SVN-L1 | NK Brinje Grosuplje | **non validé** |
-| 2026/27 | TUN-L1 | AS Marsa | **non validé** |
-| 2026/27 | TUN-L1 | CA Bizertin | **non validé** |
-| 2026/27 | TUN-L1 | CS Hammam-Lif | **non validé** |
-| 2026/27 | TUN-L1 | CS Sfaxien | **non validé** |
 | 2026/27 | TUN-L1 | ES Hammam Sousse | **non validé** |
-| 2026/27 | TUN-L1 | ES Métlaoui | **non validé** |
-| 2026/27 | TUN-L1 | ES Zarzis | **non validé** |
-| 2026/27 | TUN-L1 | JS El Omrane | **non validé** |
-| 2026/27 | TUN-L1 | Olympique Béja | **non validé** |
 | 2026/27 | TUN-L1 | PS Sakiet Eddaïer | **non validé** |
-| 2026/27 | TUN-L1 | Stade Tunisien | **non validé** |
-| 2026/27 | TUN-L1 | US Ben Guerdane | **non validé** |
-| 2026/27 | TUN-L1 | US Monastir (football) | **non validé** |
-| 2026/27 | TUN-L1 | Étoile Sportive du Sahel | **non validé** |
-| 2026/27 | URY-L1 | Albion F.C. | **non validé** |
-| 2026/27 | URY-L1 | Boston River | **non validé** |
-| 2026/27 | URY-L1 | C.A. Cerro | **non validé** |
-| 2026/27 | URY-L1 | C.A. Progreso | **non validé** |
-| 2026/27 | URY-L1 | Central Español | **non validé** |
-| 2026/27 | URY-L1 | Cerro Largo F.C. | **non validé** |
-| 2026/27 | URY-L1 | Danubio F.C. | **non validé** |
-| 2026/27 | URY-L1 | Defensor Sporting | **non validé** |
-| 2026/27 | URY-L1 | Deportivo Maldonado | **non validé** |
-| 2026/27 | URY-L1 | Juventud de Las Piedras | **non validé** |
-| 2026/27 | URY-L1 | Liverpool F.C. (Montevideo) | **non validé** |
-| 2026/27 | URY-L1 | Montevideo City Torque | **non validé** |
-| 2026/27 | URY-L1 | Montevideo Wanderers F.C. | **non validé** |
-| 2026/27 | URY-L1 | Racing Club de Montevideo | **non validé** |
-| 2026/27 | VNM-L1 | Bac Ninh FC | **non validé** |
-| 2026/27 | VNM-L1 | Cong An Ho Chi Minh City FC | **non validé** |
-| 2026/27 | VNM-L1 | Dong Nai City FC | **non validé** |
-| 2026/27 | VNM-L1 | Haiphong FC | **non validé** |
-| 2026/27 | VNM-L1 | Hanoi FC | **non validé** |
-| 2026/27 | VNM-L1 | Hoang Anh Gia Lai FC | **non validé** |
-| 2026/27 | VNM-L1 | Hong Linh Ha Tinh FC | **non validé** |
-| 2026/27 | VNM-L1 | Ninh Binh FC | **non validé** |
-| 2026/27 | VNM-L1 | SHB Da Nang | **non validé** |
-| 2026/27 | VNM-L1 | Song Lam Nghe An FC | **non validé** |
-| 2026/27 | VNM-L1 | Thanh Hoa FC | **non validé** |
-| 2026/27 | VNM-L1 | Thep Xanh Nam Dinh F.C. | **non validé** |
-| 2026/27 | VNM-L1 | Thể Công–Viettel FC | **non validé** |
-| 2026/27 | ZAF-L1 | AmaZulu F.C. | **non validé** |
-| 2026/27 | ZAF-L1 | Chippa United F.C. | **non validé** |
-| 2026/27 | ZAF-L1 | Durban City F.C. (2024) | **non validé** |
-| 2026/27 | ZAF-L1 | Kaizer Chiefs F.C. | **non validé** |
 | 2026/27 | ZAF-L1 | Kruger United F.C. | **non validé** |
-| 2026/27 | ZAF-L1 | Lamontville Golden Arrows F.C. | **non validé** |
-| 2026/27 | ZAF-L1 | Mamelodi Sundowns F.C. | **non validé** |
 | 2026/27 | ZAF-L1 | Marumo Gallants F.C. | **non validé** |
 | 2026/27 | ZAF-L1 | Milford F.C. (South Africa) | **non validé** |
-| 2026/27 | ZAF-L1 | Polokwane City F.C. | **non validé** |
 | 2026/27 | ZAF-L1 | Richards Bay F.C. | **non validé** |
 | 2026/27 | ZAF-L1 | Sekhukhune United F.C. | **non validé** |
 | 2026/27 | ZAF-L1 | Siwelele F.C. | **non validé** |
-| 2026/27 | ZAF-L1 | Stellenbosch F.C. | **non validé** |
-| 2026/27 | ZAF-L1 | TS Galaxy F.C. | **non validé** |
 | 2025/26 | AGO-L1 | Atlético Petróleos de Luanda | **non validé** |
 | 2025/26 | ALB-L1 | AF Elbasani | **non validé** |
 | 2025/26 | ALB-L1 | FC Dinamo City | **non validé** |
@@ -16418,12 +16170,12 @@ Chaque case : effectifs établis / clubs du championnat. `⚠` = au moins un tro
 
 | Donnée | Manquants | Sur |
 |---|---|---|
-| Joueurs sans identité Wikidata (QID) | 26596 | 89981 |
-| Joueurs sans carrière (infobox) | 29270 | 89981 |
-| Joueurs sans date de naissance au jour près | 27430 | 89981 |
-| Lignes d'effectif sans nationalité | 7160 | 335673 |
-| Lignes d'effectif sans poste | 1927 | 335673 |
-| Lignes d'effectif à statut inconnu (prêt/transfert) | 286529 | 335673 |
+| Joueurs sans identité Wikidata (QID) | 32882 | 96245 |
+| Joueurs sans carrière (infobox) | 35534 | 96245 |
+| Joueurs sans date de naissance au jour près | 33715 | 96245 |
+| Lignes d'effectif sans nationalité | 7473 | 343575 |
+| Lignes d'effectif sans poste | 1724 | 343575 |
+| Lignes d'effectif à statut inconnu (prêt/transfert) | 293661 | 343575 |
 | Clubs à effectifs sans logo | 395 | 2822 |
 | Clubs à effectifs sans page Wikipedia française | 689 | 2822 |
 

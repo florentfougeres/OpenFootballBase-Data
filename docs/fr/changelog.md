@@ -4,6 +4,15 @@
 
 Les releases de données publiées, la plus récente d'abord. Les noms suivent le [versionnage sémantique](https://semver.org/lang/fr/) : **majeure** = changement de schéma incompatible, **mineure** = nouvelles données (championnat, pays, coupe, table, colonne), **correctif** = corrections de données. Chaque release s'appelle `Data X.Y.Z` avec le tag `data-X.Y.Z` ([comment publier](publishing-a-release.md)). Les changements du site et des outils qui ne sont pas liés à une release de données sont listés sous « Site et outils ».
 
+## Data 1.26.0 — 2026-11-27
+- **Effectifs 2026/27 des 20 pays en « liste seulement »** (Mexique, Japon, Chine, Égypte, Colombie, Maroc…) : 292 de leurs 317 club-saisons ont maintenant un effectif. La saison en cours passe à 1 184 effectifs sur 1 216 ; toutes saisons : 10 303 → 10 551 sur 26 674 (39,6 %). Les saisons antérieures de ces pays restent sans effectifs.
+- **`complete-clubs`** couvre aussi les championnats en « liste seulement » (`squads = false`), dont aucune commande ne lisait les effectifs.
+- Logos du Liverpool FC et du Montpellier HSC corrigés à la main.
+- **Anciens joueurs, meilleurs buteurs de l'histoire, encadrement et arbitres sortis des effectifs** : des sections « Notable players », « Most goals », « Technical staff » ou « Scheidsrechters » étaient lues comme des effectifs (Henry Larsson dans Elfsborg 2026/27) : 272 lignes retirées.
+- **Carrières écrites avec le signe moins** (« 2023− », « 2019−2022 », 598 lignes) : lues comme terminées leur première année, des joueurs actifs paraissaient retraités.
+- **Anciens effectifs d'une page de club** (sections datées d'avant la saison précédente, Ajman Club : 97 lignes) : ils ne sont plus pris pour l'effectif actuel.
+- Doublons d'orthographe fusionnés dans les effectifs, homonymes liés à tort détachés, un faux joueur (« DSP ») retiré, fiches devenues vides supprimées.
+
 ## Data 1.25.0 — 2026-11-25
 - **Effectifs 2026/27 : 378 clubs de plus** (Pologne, Albanie, Azerbaïdjan, Malte, Suède…) grâce à `complete-clubs --unseen` : 9 925 → 10 303 effectifs établis sur 26 674 (38,6 %). Sept doublons de translittération (FC Kudrivka, Universitatea Cluj) ont été fusionnés et un faux joueur (« Captain », lu dans un tableau) retiré.
 - **Règle des « six mots »** : un nom sans lien de six mots ou plus n'est plus pris pour une liste de noms de famille collés quand certains mots sont des particules (de, dos, da, van, von…) : « Victor Hugo dos Santos de Sa » (Paide Linnameeskond) est un vrai joueur.

@@ -104,6 +104,10 @@ def test_record_tables_and_current_squads_read_for_a_past_season_are_purged():
     from openfootball.reconcile import purge_misplaced_squads
     assert is_excluded_section("Most appearances") and is_excluded_section("Top 10 scorers of all time") and is_excluded_section("Retired numbers")
     assert not is_excluded_section("First-team squad") and not is_excluded_section("Squad")
+    for s in ("Notable players", "Most goals", "Current technical staff", "Technical & Medical Staff", "Scheidsrechters 2009/2010", "2005–06 backroom staff"):
+        assert is_excluded_section(s), s
+    for s in ("Effectif et staff technique 2014-2015", "Players and club staff", "Plantilla y cuerpo técnico", "Roster and staff"):
+        assert not is_excluded_section(s), s                  # effectif présenté avec l'encadrement : il reste un effectif
     c = _squad_db()
     done = purge_misplaced_squads(c, log=lambda *_: None)
     assert done == {"records": 2, "page_du_club": 1}

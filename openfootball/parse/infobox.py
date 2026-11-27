@@ -34,7 +34,7 @@ class CareerSpell:
 
 def parse_years(raw: str | None) -> tuple[int | None, int | None]:
     """'2009–2013' -> (2009, 2013) ; '2010' -> (2010, 2010) ; '2025–' -> (2025, None) ; '2012–13' -> (2012, 2013)."""
-    m = _YEARS.search(raw or "")
+    m = _YEARS.search((raw or "").replace("−", "–"))          # « 2019−2022 » écrit avec le signe moins
     if not m:
         return None, None
     start = int(m.group(1))

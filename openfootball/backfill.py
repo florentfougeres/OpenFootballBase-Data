@@ -179,6 +179,8 @@ def _club_page_fallback(con, cs_id: int, team: str, qid: str | None, label: str,
                     f"{start_year}-{short}", f"{start_year}–{short}", f"{start_year}/{short}", label}
     def accept(entries, text):
         """Effectif principal plausible ET actuel : la page cite la saison, ou l'effectif est sous un titre « actuel »."""
+        # Une page de club garde parfois ses anciens effectifs (« Rosa 2011-2012 ») : une section datée d'avant la saison précédente n'est pas l'effectif cherché.
+        entries = [e for e in entries if not (ys := [int(y) for y in re.findall(r"(?<!\d)20\d\d(?!\d)", e.section or "")]) or max(ys) >= start_year - 1]
         main = plausible(entries)
         if main and (any(m in text for m in season_marks) or any(_CURRENT_SECTION.search(e.section or "") for e in main)):
             return main

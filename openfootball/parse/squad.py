@@ -50,7 +50,9 @@ _EXCLUDED_SECTION = re.compile(
     r"coaching staff|^staff\b|managerial|^management|"
     r"^goals?$|goalscorers?|top scor|assists?|disciplin|suspensions?|sanctions?|contract|award|clean sheet|hat-?trick|player of the|"
     r"most appearances|top \d+|top minutes|all[- ]time|retired numbers?|records?|hall of fame|legends|"             # tableaux de records de la page d'un club : des légendes, pas l'effectif
-    r"dobletes|doubles?\b|braces|goleadores|^captains?$|gols (sofridos|marcados)|gamper trophy",                  # buteurs, doublés, capitaines : le numéro de la ligne est un nombre de buts, pas un numéro de maillot
+    r"dobletes|doubles?\b|braces|goleadores|^captains?$|gols (sofridos|marcados)|gamper trophy|"                  # buteurs, doublés, capitaines : le numéro de la ligne est un nombre de buts, pas un numéro de maillot
+    r"notable (former )?players|former players|most goals|^scheidsrechters|"                                     # anciens joueurs célèbres, meilleurs buteurs de l'histoire, arbitres
+    r"^((current )?(technical|backroom)( (&|and) medical)? |team )staff$|backroom staff$",                       # encadrement seul (« Effectif et staff technique » reste un effectif)
     re.I)
 
 

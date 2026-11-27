@@ -333,6 +333,9 @@ def complete_national_clubs(con, start_year: int, *, wp, lang_clients: dict, wd,
         raise SeasonFrozen(f"saison {start_year} figée : écriture refusée")
     label = season_label(start_year)
     comp_ids = [r[0] for r in national_leagues(con)]
+    listed = [sc.competition_code for sc in load_scopes() if not sc.squads]      # championnats « liste seulement » : `backfill` ne lit pas leurs effectifs
+    if listed:
+        comp_ids += [r[0] for r in con.execute(f"SELECT id FROM competition WHERE code IN ({', '.join('?' for _ in listed)}) ORDER BY code", listed).fetchall()]
     if not comp_ids:
         return []
     marks = ", ".join("?" for _ in comp_ids)

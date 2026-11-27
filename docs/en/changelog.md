@@ -4,6 +4,15 @@
 
 Published data releases, newest first. Names follow [semantic versioning](https://semver.org): **major** = incompatible schema change, **minor** = new data (league, country, cup, table, column), **patch** = data fixes. Each release is `Data X.Y.Z` with tag `data-X.Y.Z` ([how to publish](publishing-a-release.md)). Changes to the site and tooling that are not tied to a data release are listed under "Site and tooling".
 
+## Data 1.26.0 — 2026-11-27
+- **2026/27 squads of the 20 "list only" countries** (Mexico, Japan, China, Egypt, Colombia, Morocco…): 292 of their 317 club-seasons now have a squad. The current season goes to 1,184 squads out of 1,216; all seasons: 10,303 → 10,551 out of 26,674 (39.6%). Earlier seasons of these countries still have no squads.
+- **`complete-clubs`** also covers the "list only" leagues (`squads = false`), whose squads no command was reading.
+- Logos of Liverpool FC and Montpellier HSC corrected by hand.
+- **Former players, record scorers, staff and referees are no longer in squads**: sections such as "Notable players", "Most goals", "Technical staff" or "Scheidsrechters" were read as squads (Henry Larsson in Elfsborg 2026/27): 272 rows removed.
+- **Careers written with a minus sign** ("2023−", "2019−2022", 598 lines) were read as ending in their first year, so active players looked retired.
+- **Old squads on a club page** (sections dated before the previous season, Ajman Club: 97 rows) are no longer taken for the current squad.
+- Spelling duplicates in squads merged, wrongly linked namesakes detached, one fake player ("DSP") removed, empty player entries dropped.
+
 ## Data 1.25.0 — 2026-11-25
 - **2026/27 squads: 378 more clubs** (Poland, Albania, Azerbaijan, Malta, Sweden…) thanks to `complete-clubs --unseen`: 9,925 → 10,303 established squads out of 26,674 (38.6%). Seven transliteration duplicates (FC Kudrivka, Universitatea Cluj) were merged and one fake player ("Captain", read from a table) removed.
 - **"Six words" rule**: an unlinked name of six or more words is no longer taken for a list of glued surnames when some words are particles (de, dos, da, van, von…): "Victor Hugo dos Santos de Sa" (Paide Linnameeskond) is a real player.
